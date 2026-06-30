@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palace Istanbul Kebab — Menu Board Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{ --slant:22px; --boardH:360px; }
+*{ box-sizing:border-box; }
+html,body{ margin:0; background:#0d0d0f; color:#f4e9d6; font-family:Oswald,sans-serif; }
+a{ color:inherit; }
+
+/* ---------- toolbar ---------- */
+.toolbar{ position:sticky; top:0; z-index:50; background:#15110b;
+  border-bottom:1px solid #2a2114; padding:14px 22px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.toolbar .brand{ display:flex; flex-direction:column; line-height:1; }
+.toolbar .brand b{ font-family:Anton; font-size:20px; letter-spacing:.5px; color:#F4B400; }
+.toolbar .brand span{ font-size:11px; color:#9b8e76; letter-spacing:2px; margin-top:4px; }
+.spacer{ flex:1; }
+.btn{ font-family:Oswald; font-weight:700; font-size:13px; letter-spacing:.6px; text-transform:uppercase;
+  border:none; cursor:pointer; padding:11px 18px; border-radius:8px; color:#fff; background:#C41E3A; }
+.btn.alt{ background:#E8730C; }
+.btn.ghost{ background:#241c12; color:#f4e9d6; border:1px solid #3a2e1c; }
+.btn:active{ transform:translateY(1px); }
+.toolbar select{ font-family:Oswald; font-weight:600; background:#241c12; color:#f4e9d6;
+  border:1px solid #3a2e1c; border-radius:8px; padding:10px 10px; cursor:pointer; }
+.toolbar label{ font-size:12px; color:#9b8e76; letter-spacing:.5px; }
+.hint{ width:100%; font-size:12.5px; color:#9b8e76; margin-top:2px; }
+.hint b{ color:#F4B400; }
+
+/* ---------- board ---------- */
+.boardhead{ display:flex; align-items:center; gap:14px; padding:22px 22px 8px; }
+.boardhead h2{ font-family:Anton; font-size:20px; margin:0; color:#FFF4DD; letter-spacing:.5px; }
+.boardhead .dim{ font-size:12px; color:#F4B400; border:1px solid #4a3a1e; padding:3px 9px; border-radius:6px; letter-spacing:.5px; }
+.boardhead .cells{ font-size:12px; color:#9b8e76; }
+.boardhead .bspacer{ flex:1; }
+.scroll{ overflow-x:auto; overflow-y:hidden; padding:0 22px 10px; }
+.board{ position:relative; display:flex; height:var(--boardH); width:max-content; background:#0a0a0a; }
+.board>canvas.bg{ position:absolute; left:0; top:0; z-index:0; pointer-events:none; }
+
+/* ---------- cell ---------- */
+.cell{ position:relative; z-index:1; height:100%; overflow:hidden; padding:12px 18px 10px;
+  display:flex; flex-direction:column; align-items:center; background:transparent; }
+.tone-red{    --grad:linear-gradient(157deg,#8d1414 0%,#b41f1f 55%,#7a0f0f 100%); }
+.tone-orange{ --grad:linear-gradient(157deg,#c4571a 0%,#ea7a10 55%,#ad470f 100%); }
+.tone-yellow{ --grad:linear-gradient(157deg,#df910f 0%,#f7b62b 55%,#d2870d 100%); }
+
+.halftone{ position:absolute; inset:0; z-index:1; pointer-events:none; opacity:.5; mix-blend-mode:soft-light;
+  background-image:radial-gradient(rgba(255,255,255,.55) 1.3px, transparent 1.6px); background-size:13px 13px; }
+
+/* name brush banner */
+.banner{ position:relative; z-index:3; width:90%; min-height:40px; margin-top:2px; padding:5px 14px 7px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  transform:rotate(-1deg);
+  background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20320%2096'%20preserveAspectRatio='none'%3E%3Cpath%20d='M10%2021%20C70%206%20142%209%20176%2013%20C232%206%20300%209%20312%2023%20C319%2046%20312%2067%20303%2079%20C242%2091%20150%2084%20120%2082%20C70%2087%2018%2084%2012%2074%20C3%2053%203%2034%2010%2021%20Z'%20fill='%23fdfaf3'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+  background-color:#fdfaf3; border-radius:32px;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
+.name{ font-family:Anton; color:#E8730C; text-transform:uppercase; line-height:.92; letter-spacing:.3px; outline:none; }
+.sub{ font-family:Caveat; font-weight:700; color:#5a3a14; margin-top:1px; line-height:1; outline:none; }
+
+/* photo */
+.photo{ position:relative; z-index:2; flex:1; width:100%; margin:1px 0; min-height:0;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; }
+.photo img{ max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 9px 11px rgba(0,0,0,.55));
+  transform-origin:center center; will-change:transform; user-select:none; -webkit-user-drag:none; }
+.photo[data-empty="0"]{ cursor:grab; }
+.photo[data-empty="0"].panning{ cursor:grabbing; }
+.photo.drag{ outline:3px dashed #fff; outline-offset:-8px; border-radius:14px; }
+.addhint{ font-family:Oswald; font-weight:600; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,.92);
+  border:2px dashed rgba(255,255,255,.65); padding:12px 16px; border-radius:12px; text-align:center; }
+
+/* zoom controls */
+.zoomctl{ position:absolute; z-index:5; bottom:6px; left:50%; transform:translateX(-50%);
+  display:flex; gap:5px; align-items:center; background:rgba(0,0,0,.55); padding:4px 6px; border-radius:20px;
+  backdrop-filter:blur(2px); }
+.zoomctl button{ width:24px; height:24px; border-radius:50%; border:none; cursor:pointer; line-height:1;
+  background:rgba(255,255,255,.9); color:#15110b; font-family:Oswald; font-weight:700; font-size:15px; }
+.zoomctl button.wide{ width:auto; border-radius:12px; padding:0 9px; font-size:11px; letter-spacing:.5px; text-transform:uppercase; }
+.zoomctl button:active{ transform:translateY(1px); }
+
+/* price */
+.price{ position:relative; z-index:3; margin-bottom:3px; text-align:center; color:#fff; line-height:.82; }
+.pnum{ font-family:Anton; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.30); outline:none; white-space:nowrap; }
+.thbline{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:2px; }
+.thbline .arw{ color:#F4B400; font-weight:700; font-size:13px; }
+.thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; font-size:12px; }
+.cell.is-set .thbline{ display:none; }
+
+/* SET stamp */
+.setstamp{ display:none; position:absolute; z-index:4; top:54px; right:12%;
+  width:48px; height:48px; border-radius:50%; background:#C41E3A; border:2.5px solid #fff;
+  color:#fff; font-family:Anton; font-size:16px; align-items:center; justify-content:center;
+  transform:rotate(-12deg); box-shadow:0 4px 9px rgba(0,0,0,.45); }
+.cell.is-set .setstamp{ display:flex; }
+
+/* controls */
+.del{ position:absolute; z-index:6; top:8px; right:9px; width:24px; height:24px; border-radius:50%;
+  border:none; background:rgba(0,0,0,.55); color:#fff; font-size:15px; cursor:pointer; line-height:1; }
+.addcell{ align-self:center; margin:0 6px; }
+.addcell button{ width:46px; height:46px; border-radius:50%; border:2px dashed #4a3a1e; background:#16110a;
+  color:#F4B400; font-size:24px; cursor:pointer; }
+
+@media print{ .no-print{ display:none !important; } body{ background:#fff; } }
+.exporting .no-print{ display:none !important; }
+.exporting .name,.exporting .sub,.exporting .pnum{ caret-color:transparent; }
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <div class="brand"><b>PALACE ISTANBUL KEBAB</b><span>MENU BOARD BUILDER</span></div>
+  <div class="spacer"></div>
+  <label>Panel style</label>
+  <select id="styleSel" onchange="setStyle(this.value)">
+    <option value="slanted">Slanted</option>
+    <option value="straight">Straight</option>
+    <option value="horizontal">Horizontal</option>
+  </select>
+  <button class="btn" onclick="exportPDF()">Export PDF</button>
+  <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name, description or price</b> to edit. Type <b>SET</b> as a price for a SET stamp. Then <b>Export PDF</b> to print, or grab a high-res <b>PNG</b> strip per board for the sign maker.</div>
+</div>
+
+<div id="boards"></div>
+
+<script>
+const TONES = ["tone-red","tone-orange","tone-yellow"];
+const SECTIONS = [
+ {name:"Sol Master", dim:"440 x 35 cm", items:[
+   {n:"ISKENDER KEBAB", s:"Tomato sauce & yogurt", p:"450"},
+   {n:"TURKISH PIDE", s:"Boat-shaped Turkish pizza", p:"320"},
+   {n:"LAHMACUN", s:"Spiced Turkish flatbread", p:"SET"},
+   {n:"MIX DONER PLATE", s:"Chicken & lamb + rice", p:"300"},
+   {n:"ADANA KEBAB", s:"Spicy minced lamb skewer", p:"SET"},
+   {n:"URFA KEBAB", s:"Mild minced lamb skewer", p:"SET"},
+   {n:"KOFTE PLATE", s:"Grilled meatballs + rice", p:"SET"},
+   {n:"MIXED GRILL", s:"Chef's meat selection", p:"SET"},
+ ]},
+ {name:"Middle", dim:"140 x 35 cm", items:[
+   {n:"DONER DURUM", s:"Chicken or lamb wrap", p:"SET"},
+   {n:"CHICKEN ROLL", s:"Tavuk durum", p:"120"},
+   {n:"LAMB ROLL", s:"Kuzu durum", p:"140"},
+ ]},
+ {name:"Right 2", dim:"285 x 35 cm", items:[
+   {n:"FRENCH FRIES", s:"Patates kizartmasi", p:"120"},
+   {n:"HUMMUS", s:"Chickpea dip", p:"140"},
+   {n:"CACIK", s:"Yogurt & cucumber", p:"140"},
+   {n:"BUTTER RICE", s:"Pilav", p:"80"},
+   {n:"SOFT DRINKS", s:"Cola, Ayran, Water", p:"SET"},
+ ]},
+ {name:"Right 1", dim:"460 x 35 cm", items:[
+   {n:"ROLL SET", s:"Chicken or Lamb wrap", p:"180 / 200"},
+   {n:"FALAFEL PITA", s:"Fresh falafel with salad", p:"140"},
+   {n:"CHICKEN PITA", s:"Grilled chicken pita", p:"160"},
+   {n:"LAMB PITA", s:"Tender lamb pita", p:"180"},
+   {n:"LAMB KEBAB PLATE", s:"Sliced lamb with rice", p:"SET"},
+   {n:"PIZZA TURKO MARGARITA", s:"Stone-baked pizza", p:"SET"},
+   {n:"LENTIL SOUP", s:"Traditional lentil soup", p:"120"},
+   {n:"SPECIAL KEBAB", s:"Chef's Special", p:"250"},
+ ]},
+];
+
+const BOARD_H = 360;                 // px, matches --boardH
+const boardsEl = document.getElementById('boards');
+
+let STYLE='slanted';
+const TONE_COLORS=[
+ ['#9a1717','#bf2222','#7a0f0f'],   // red
+ ['#cf5b18','#ee7d10','#b34a10'],   // orange
+ ['#e6970f','#f9ba2c','#d2870d'],   // yellow
+];
+function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+function drawBg(canvas, si){
+  const sec=SECTIONS[si], n=sec.items.length, cw=cellWidth(sec), W=n*cw, H=BOARD_H, dpr=2;
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
+  // slant = diagonal seam offset; gap = black separator between tiles (horizontal style)
+  const slant=(STYLE==='straight')?0:20;
+  const gap  =(STYLE==='horizontal')?13:0;
+  const rnd=rng(si*131+9);
+  for(let i=0;i<n;i++){
+    const g0=(i>0)?gap/2:0, g1=(i<n-1)?gap/2:0;
+    const bL=i*cw+g0, bR=(i+1)*cw-g1;
+    const tL=(i===0)?0:bL+slant, tR=(i===n-1)?W:bR+slant;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(tL,0); ctx.lineTo(tR,0); ctx.lineTo(bR,H); ctx.lineTo(bL,H); ctx.closePath(); ctx.clip();
+    const tone=TONE_COLORS[i%3];
+    const g=ctx.createLinearGradient(bL,0,bR,H);
+    g.addColorStop(0,tone[0]); g.addColorStop(.55,tone[1]); g.addColorStop(1,tone[2]);
+    ctx.fillStyle=g; ctx.fillRect(bL-slant-2,0,cw+2*slant+4,H);
+    // halftone dots
+    ctx.globalAlpha=0.10; ctx.fillStyle='#ffffff';
+    for(let y=6,row=0;y<H;y+=15,row++){ for(let x=bL-slant;x<bR+slant;x+=15){ ctx.beginPath(); ctx.arc(x+(row%2?7:0),y,1.5,0,6.283); ctx.fill(); } }
+    ctx.globalAlpha=1;
+    // faint diagonal grunge streaks
+    ctx.strokeStyle='rgba(0,0,0,0.07)'; ctx.lineWidth=2;
+    for(let k=1;k<5;k++){ const x=bL+cw*k/5; ctx.beginPath(); ctx.moveTo(x+slant,-10); ctx.lineTo(x-28,H+10); ctx.stroke(); }
+    // speckle
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    for(let sp=0;sp<28;sp++){ ctx.fillRect(bL+rnd()*cw, rnd()*H, 2,2); }
+    ctx.restore();
+    // crisp seam shadow on the diagonal (skip when a real black gap already separates tiles)
+    if(i<n-1 && gap===0){ ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.32)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tR,0); ctx.lineTo(bR,H); ctx.stroke(); ctx.restore(); }
+  }
+}
+function setStyle(v){ STYLE=v; SECTIONS.forEach((_,si)=>syncBoard(si)); SECTIONS.forEach((_,si)=>renderBoard(si)); }
+
+
+function cellWidth(sec){
+  const cm = parseInt(sec.dim);      // long side cm
+  const cells = sec.items.length;
+  const cellcm = cm/cells;
+  return BOARD_H * cellcm/35;         // true 57x35-style landscape ratio
+}
+
+function isSet(p){ return /^\s*set\s*$/i.test(p||""); }
+
+// image transform helpers -----------------------------------------------
+function imgTransform(it){
+  const z=it.z||1, x=it.x||0, y=it.y||0;
+  return `translate(${x}px,${y}px) scale(${z})`;
+}
+
+function makeCell(item, idx, w){
+  const c = document.createElement('div');
+  c.className = 'cell'+(isSet(item.p)?' is-set':'');
+  c.style.width = w+'px';
+  c.dataset.idx = idx;
+  const nameSize = Math.max(13, Math.min(26, w*0.060));
+  const subSize  = Math.max(11, Math.min(15, w*0.038));
+  const priceSize= Math.max(24, Math.min(46, w*0.115));
+  const photoInner = item.img
+    ? `<img src="${item.img}" style="transform:${imgTransform(item)}">
+       <div class="zoomctl no-print">
+         <button data-z="out" title="zoom out">&minus;</button>
+         <button data-z="in" title="zoom in">+</button>
+         <button data-z="reset" title="reset">&#8635;</button>
+         <button data-z="replace" class="wide" title="replace photo">photo</button>
+       </div>`
+    : `<span class="addhint no-print">+ ADD<br>PHOTO</span>`;
+  c.innerHTML = `
+    <button class="del no-print" title="remove">×</button>
+    <div class="banner">
+      <span class="name" contenteditable style="font-size:${nameSize}px">${item.n}</span>
+      <span class="sub" contenteditable style="font-size:${subSize}px">${item.s}</span>
+    </div>
+    <div class="setstamp">SET</div>
+    <div class="photo" data-empty="${item.img?'0':'1'}">
+      ${photoInner}
+    </div>
+    <div class="price">
+      <span class="pnum" contenteditable style="font-size:${priceSize}px">${item.p}</span>
+      <div class="thbline"><span class="arw">&rsaquo;</span><span class="thb">THB</span><span class="arw">&lsaquo;</span></div>
+    </div>`;
+  return c;
+}
+
+function renderBoard(si){
+  const sec = SECTIONS[si];
+  const w = cellWidth(sec);
+  const board = document.querySelector(`.board[data-sec="${si}"]`);
+  board.innerHTML = '';
+  const cv=document.createElement('canvas'); cv.className='bg'; board.appendChild(cv);
+  sec.items.forEach((it,idx)=> board.appendChild(makeCell(it,idx,w)));
+  // add-cell button
+  const add = document.createElement('div');
+  add.className='addcell no-print';
+  add.innerHTML='<button title="add item">+</button>';
+  add.querySelector('button').onclick=()=>{ syncBoard(si);
+    SECTIONS[si].items.push({n:"NEW ITEM",s:"Description",p:"0"}); renderBoard(si); updateHead(si); };
+  board.appendChild(add);
+  drawBg(cv, si);
+}
+
+function updateHead(si){
+  const sec=SECTIONS[si];
+  document.querySelector(`.cellcount[data-sec="${si}"]`).textContent = sec.items.length+" cells · "+Math.round(parseInt(sec.dim)/sec.items.length)+" cm each";
+}
+
+function syncBoard(si){  // read live DOM edits back into the model
+  const sec=SECTIONS[si];
+  const cells=[...document.querySelectorAll(`.board[data-sec="${si}"] .cell`)];
+  cells.forEach((c,idx)=>{
+    if(!sec.items[idx]) return;
+    sec.items[idx].n=c.querySelector('.name').textContent.trim();
+    sec.items[idx].s=c.querySelector('.sub').textContent.trim();
+    sec.items[idx].p=c.querySelector('.pnum').textContent.trim();
+    const img=c.querySelector('.photo img');
+    sec.items[idx].img= img? img.src : null;
+    if(!img){ sec.items[idx].z=1; sec.items[idx].x=0; sec.items[idx].y=0; }
+    // z/x/y are kept live on the model during interaction, nothing else needed here
+  });
+}
+
+function buildAll(){
+  SECTIONS.forEach((sec,si)=>{
+    const wrap=document.createElement('section');
+    wrap.innerHTML=`
+      <div class="boardhead no-print">
+        <h2>${sec.name}</h2>
+        <span class="dim">${sec.dim}</span>
+        <span class="cells cellcount" data-sec="${si}">${sec.items.length} cells · ${Math.round(parseInt(sec.dim)/sec.items.length)} cm each</span>
+        <span class="bspacer"></span>
+        <button class="btn ghost" onclick="downloadPNG(${si})">Download PNG</button>
+      </div>
+      <div class="scroll"><div class="board" data-sec="${si}"></div></div>`;
+    boardsEl.appendChild(wrap);
+    renderBoard(si);
+  });
+}
+buildAll();
+
+/* ---------- interactions ---------- */
+let fileTarget=null;
+const fileInput=document.createElement('input');
+fileInput.type='file'; fileInput.accept='image/*'; fileInput.style.display='none';
+document.body.appendChild(fileInput);
+fileInput.addEventListener('change',()=>{ if(fileInput.files[0]&&fileTarget) setPhoto(fileTarget,fileInput.files[0]); fileInput.value=''; });
+
+function cellOf(el){ return el.closest('.cell'); }
+function itemOf(el){
+  const cell=cellOf(el); if(!cell) return null;
+  const board=cell.closest('.board'); const si=+board.dataset.sec;
+  return SECTIONS[si].items[+cell.dataset.idx];
+}
+
+function setPhoto(photoEl,file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const it=itemOf(photoEl);
+    if(it){ it.img=e.target.result; it.z=1; it.x=0; it.y=0; }
+    const cell=cellOf(photoEl); const board=cell.closest('.board'); const si=+board.dataset.sec;
+    const idx=+cell.dataset.idx;
+    const w=cellWidth(SECTIONS[si]);
+    const fresh=makeCell(SECTIONS[si].items[idx], idx, w);
+    cell.replaceWith(fresh);
+  };
+  r.readAsDataURL(file);
+}
+
+// apply current model transform to the <img> in a photo element
+function applyZoom(photoEl){
+  const img=photoEl.querySelector('img'); const it=itemOf(photoEl);
+  if(img&&it) img.style.transform=imgTransform(it);
+}
+
+boardsEl.addEventListener('click',e=>{
+  const del=e.target.closest('.del');
+  if(del){ const cell=del.closest('.cell'); const board=cell.closest('.board'); const si=+board.dataset.sec;
+    syncBoard(si); SECTIONS[si].items.splice(+cell.dataset.idx,1); renderBoard(si); updateHead(si); return; }
+
+  // zoom buttons
+  const zb=e.target.closest('.zoomctl button');
+  if(zb){ e.stopPropagation();
+    const photo=zb.closest('.photo'); const it=itemOf(photo); if(!it) return; const act=zb.dataset.z;
+    if(act==='in')  it.z=Math.min(6,(it.z||1)*1.2);
+    else if(act==='out'){ it.z=Math.max(0.3,(it.z||1)/1.2); }
+    else if(act==='reset'){ it.z=1; it.x=0; it.y=0; }
+    else if(act==='replace'){ fileTarget=photo; fileInput.click(); return; }
+    applyZoom(photo); return;
+  }
+
+  // click empty photo => add image
+  const photo=e.target.closest('.photo');
+  if(photo && photo.dataset.empty==='1'){ fileTarget=photo; fileInput.click(); }
+});
+
+// wheel to zoom over a filled photo
+boardsEl.addEventListener('wheel',e=>{
+  const photo=e.target.closest('.photo');
+  if(!photo || photo.dataset.empty!=='0') return;
+  e.preventDefault();
+  const it=itemOf(photo); if(!it) return;
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  it.z=Math.min(6, Math.max(0.3,(it.z||1)*factor));
+  applyZoom(photo);
+},{passive:false});
+
+// drag to pan a filled photo
+let pan=null;
+boardsEl.addEventListener('pointerdown',e=>{
+  const photo=e.target.closest('.photo');
+  if(!photo || photo.dataset.empty!=='0') return;
+  if(e.target.closest('.zoomctl')) return;
+  const it=itemOf(photo); if(!it) return;
+  pan={photo,it,sx:e.clientX,sy:e.clientY,ox:it.x||0,oy:it.y||0};
+  photo.classList.add('panning');
+  photo.setPointerCapture && photo.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+boardsEl.addEventListener('pointermove',e=>{
+  if(!pan) return;
+  pan.it.x=pan.ox+(e.clientX-pan.sx);
+  pan.it.y=pan.oy+(e.clientY-pan.sy);
+  applyZoom(pan.photo);
+});
+function endPan(){ if(pan){ pan.photo.classList.remove('panning'); pan=null; } }
+boardsEl.addEventListener('pointerup',endPan);
+boardsEl.addEventListener('pointercancel',endPan);
+
+boardsEl.addEventListener('dragover',e=>{ const p=e.target.closest('.photo'); if(p){ e.preventDefault(); p.classList.add('drag'); }});
+boardsEl.addEventListener('dragleave',e=>{ const p=e.target.closest('.photo'); if(p) p.classList.remove('drag'); });
+boardsEl.addEventListener('drop',e=>{ const p=e.target.closest('.photo'); if(p&&e.dataTransfer.files[0]){ e.preventDefault(); p.classList.remove('drag'); setPhoto(p,e.dataTransfer.files[0]); }});
+
+boardsEl.addEventListener('focusout',e=>{
+  if(e.target.classList.contains('pnum')){
+    const cell=e.target.closest('.cell');
+    let t=e.target.textContent.trim();
+    if(isSet(t)){ e.target.textContent='SET'; cell.classList.add('is-set'); }
+    else cell.classList.remove('is-set');
+  }
+});
+
+/* ---------- export ---------- */
+async function snap(board){
+  document.body.classList.add('exporting');
+  await document.fonts.ready;
+  const canvas=await html2canvas(board,{backgroundColor:'#0a0a0a',scale:2,useCORS:true,
+    width:board.scrollWidth,height:board.scrollHeight,windowWidth:board.scrollWidth+80});
+  document.body.classList.remove('exporting');
+  return canvas;
+}
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+
+async function downloadPNG(si){
+  const board=document.querySelector(`.board[data-sec="${si}"]`);
+  const canvas=await snap(board);
+  canvas.toBlob(b=>dl(b, `palace-${SECTIONS[si].name.toLowerCase().replace(/\s+/g,'-')}.png`),'image/png');
+}
+async function exportAllPNG(){ for(let i=0;i<SECTIONS.length;i++){ await downloadPNG(i); await new Promise(r=>setTimeout(r,400)); } }
+
+async function exportPDF(){
+  const { jsPDF }=window.jspdf;
+  let pdf=null;
+  for(let i=0;i<SECTIONS.length;i++){
+    const board=document.querySelector(`.board[data-sec="${i}"]`);
+    const canvas=await snap(board);
+    const img=canvas.toDataURL('image/jpeg',0.92);
+    const PW=842, PH=595, m=24;                  // A4 landscape pt
+    if(!pdf) pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+    else pdf.addPage('a4','landscape');
+    pdf.setFillColor(13,13,15); pdf.rect(0,0,PW,PH,'F');
+    pdf.setTextColor(244,180,0); pdf.setFont('helvetica','bold'); pdf.setFontSize(13);
+    pdf.text(`${SECTIONS[i].name}   ·   ${SECTIONS[i].dim}   ·   ${SECTIONS[i].items.length} cells`, m, m+10);
+    const availW=PW-2*m;
+    const ratio=canvas.height/canvas.width;
+    let w=availW, h=availW*ratio;
+    const maxH=PH-2*m-30;
+    if(h>maxH){ h=maxH; w=h/ratio; }
+    pdf.addImage(img,'JPEG',(PW-w)/2,(PH-h)/2+12,w,h);
+  }
+  pdf.save('palace-istanbul-menu-boards.pdf');
+}
+</script>
+</body>
+</html>
