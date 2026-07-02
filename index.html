@@ -381,10 +381,11 @@ function makeCell(item, idx, w){
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = `background-image:url('${bannerImg(bcol)}');background-color:transparent;${poster?'border-radius:4px;':''}`;
+  const cur = (item.thb!==undefined ? item.thb : 'THB');
   const thb = poster
-    ? `<div class="thbline zigzag"><span class="arw">&#8811;</span><span class="thb">THB</span><span class="arw">&#8810;</span></div>
+    ? `<div class="thbline zigzag"><span class="arw">&#8811;</span><span class="thb" contenteditable>${cur}</span><span class="arw">&#8810;</span></div>
        <div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>`
-    : `<div class="thbline"><span class="arw">&rsaquo;</span><span class="thb">THB</span><span class="arw">&lsaquo;</span></div>`;
+    : `<div class="thbline"><span class="arw">&rsaquo;</span><span class="thb" contenteditable>${cur}</span><span class="arw">&lsaquo;</span></div>`;
   c.innerHTML = `
     <button class="del no-print" title="remove">×</button>
     <div class="titlectl no-print">
@@ -437,6 +438,8 @@ function syncBoard(si){  // read live DOM edits back into the model
     sec.items[idx].n=c.querySelector('.name').textContent.trim();
     sec.items[idx].s=c.querySelector('.sub').textContent.trim();
     sec.items[idx].p=c.querySelector('.pnum').textContent.trim();
+    const thbEl=c.querySelector('.thb');
+    if(thbEl) sec.items[idx].thb=thbEl.textContent.trim();
     const img=c.querySelector('.photo img');
     sec.items[idx].img= img? img.src : null;
     if(!img){ sec.items[idx].z=1; sec.items[idx].x=0; sec.items[idx].y=0; }
@@ -455,6 +458,7 @@ function buildAll(){
         <span class="bspacer"></span>
         <label class="chk" title="set this whole board to one colour">Board colour <input type="color" class="seccolor" data-sec="${si}" value="${sec.bg||'#a01818'}"></label>
         <button class="btn ghost" onclick="downloadPNG(${si})">Download PNG</button>
+        <button class="btn ghost" onclick="downloadSectionPDF(${si})">Download PDF</button>
       </div>
       <div class="scroll"><div class="board" data-sec="${si}"></div></div>`;
     boardsEl.appendChild(wrap);
@@ -636,6 +640,18 @@ async function downloadPNG(si){
   const nm=SECTIONS[si].name.toLowerCase().replace(/\s+/g,'-');
   dl(new Blob([tagged],{type:'image/png'}), `palace-${nm}-${wcm}x${hcm}cm-${effDpi}dpi.png`);
   return {board:SECTIONS[si].name, px:canvas.width+'×'+canvas.height, effDpi};
+}
+async function downloadSectionPDF(si){
+  const { jsPDF }=window.jspdf; const dpi=exportDPI();
+  const board=document.querySelector(`.board[data-sec="${si}"]`);
+  const {wcm,hcm}=boardCm(si);
+  const canvas=await snap(board, exportScale(board, si, dpi));
+  const img=canvas.toDataURL('image/jpeg',0.95);
+  const wmm=Math.round(wcm*10), hmm=Math.round(hcm*10), orient=wmm>=hmm?'l':'p';
+  const pdf=new jsPDF({orientation:orient, unit:'mm', format:[wmm,hmm]});
+  pdf.addImage(img,'JPEG',0,0,wmm,hmm,undefined,'FAST');
+  const nm=SECTIONS[si].name.toLowerCase().replace(/\s+/g,'-');
+  pdf.save(`palace-${nm}-${wcm}x${hcm}cm.pdf`);
 }
 async function exportAllPNG(){
   const rows=[];
