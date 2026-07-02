@@ -151,6 +151,7 @@ a{ color:inherit; }
     <option value="straight">Straight</option>
     <option value="horizontal">Horizontal</option>
     <option value="poster">Poster (Festive)</option>
+    <option value="billboard">Billboard (Gradient)</option>
   </select>
   <label class="chk"><input type="checkbox" id="bgLines" checked onchange="setBgLines(this.checked)">Background lines</label>
   <label class="chk"><input type="checkbox" id="solidBg" onchange="setSolid(this.checked)">Single colour</label>
@@ -267,10 +268,14 @@ function drawBg(canvas, si){
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
+  const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
+
+  // ---------- Billboard: one glossy gradient flowing across the whole board ----------
+  if(STYLE==='billboard'){ drawBillboard(ctx, W, H, n, cw, solidCol, si); return; }
+
   // slant = diagonal seam offset; gap = black separator between tiles (horizontal style)
   const slant=(STYLE==='straight')?0:20;
   const gap  =(STYLE==='horizontal')?13:0;
-  const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
   const rnd=rng(si*131+9);
   for(let i=0;i<n;i++){
     const g0=(i>0)?gap/2:0, g1=(i<n-1)?gap/2:0;
@@ -328,6 +333,47 @@ function drawBg(canvas, si){
     // crisp seam shadow on the diagonal (skip when a real black gap already separates tiles)
     if(i<n-1 && gap===0){ ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.32)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tR,0); ctx.lineTo(bR,H); ctx.stroke(); ctx.restore(); }
   }
+}
+function drawBillboard(ctx, W, H, n, cw, solidCol, si){
+  const rnd=rng(si*197+31);
+  // continuous diagonal colour flow across the ENTIRE board (no per-panel seams)
+  const stops = SOLID_BG
+    ? [shade(solidCol,-.30), shade(solidCol,-.05), shade(solidCol,.20), shade(solidCol,-.05), shade(solidCol,-.30)]
+    : ['#6f0d0d','#b41f1f','#e8730c','#f9ba2c','#e8730c','#b41f1f','#6f0d0d'];
+  const g=ctx.createLinearGradient(0,0,W,H);
+  stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1), c));
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // warm radial glow centred on the board — makes the middle pop like backlit signage
+  const glow=ctx.createRadialGradient(W*0.5,H*0.42, Math.min(W,H)*0.05, W*0.5,H*0.5, Math.max(W,H)*0.6);
+  glow.addColorStop(0,'rgba(255,238,190,0.28)'); glow.addColorStop(.5,'rgba(255,180,80,0.08)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+
+  // glossy top sheen (premium print/acrylic finish)
+  const sheen=ctx.createLinearGradient(0,0,0,H);
+  sheen.addColorStop(0,'rgba(255,255,255,0.26)'); sheen.addColorStop(.16,'rgba(255,255,255,0.06)');
+  sheen.addColorStop(.42,'rgba(255,255,255,0)'); sheen.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sheen; ctx.fillRect(0,0,W,H);
+
+  // fine halftone dots for print texture
+  ctx.globalAlpha=0.07; ctx.fillStyle='#ffffff';
+  for(let y=6,row=0;y<H;y+=15,row++){ for(let x=0;x<W;x+=15){ ctx.beginPath(); ctx.arc(x+(row%2?7:0),y,1.4,0,6.283); ctx.fill(); } }
+  ctx.globalAlpha=1;
+  // speckle grain
+  ctx.fillStyle='rgba(255,255,255,0.045)';
+  for(let sp=0;sp<40*n;sp++){ ctx.fillRect(rnd()*W, rnd()*H, 2,2); }
+
+  // thin luminous seams instead of hard black dividers
+  for(let i=1;i<n;i++){ const x=i*cw;
+    const seam=ctx.createLinearGradient(0,0,0,H);
+    seam.addColorStop(0,'rgba(255,255,255,0.28)'); seam.addColorStop(.5,'rgba(255,255,255,0.10)'); seam.addColorStop(1,'rgba(255,255,255,0.28)');
+    ctx.fillStyle=seam; ctx.fillRect(x-0.75,0,1.5,H);
+    ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(x+0.75,0,1,H);
+  }
+  // soft edge vignette top & bottom for depth
+  const vg=ctx.createLinearGradient(0,0,0,H);
+  vg.addColorStop(0,'rgba(0,0,0,0.20)'); vg.addColorStop(.35,'rgba(0,0,0,0)'); vg.addColorStop(.72,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.28)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 }
 function setStyle(v){ STYLE=v; SECTIONS.forEach((_,si)=>syncBoard(si)); SECTIONS.forEach((_,si)=>renderBoard(si)); }
 
