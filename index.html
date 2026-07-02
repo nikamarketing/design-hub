@@ -161,7 +161,7 @@ a{ color:inherit; }
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name, description or price</b> to edit; use <b>A− / A+</b> to resize titles if one overflows its banner. Type <b>SET</b> as a price for a SET stamp. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready. <b>Export PDF</b> gives exact-size pages; <b>PNG</b> gives one high-res strip per board for the sign maker.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name, description or price</b> to edit; use <b>A− / A+</b> to resize the title text and <b>▭− / ▭+</b> to resize the white banner behind it (independently). Type <b>SET</b> as a price for a SET stamp. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready. <b>Export PDF</b> gives exact-size pages; <b>PNG</b> gives one high-res strip per board for the sign maker.</div>
 </div>
 
 <div id="boards"></div>
@@ -358,6 +358,19 @@ function applyBannerColor(cell, it){
   const path=banner.querySelector('.blobbg path');
   if(path) path.setAttribute('fill', it.bc||'#fdfaf3');
 }
+// banner (white background) size — independent from title text size, driven by padding
+function bannerPad(it, poster){
+  const bs=it.bs||1;
+  const padX=(poster?78:72)*bs, padT=(poster?8:6)*bs, padB=(poster?10:9)*bs;
+  return `padding:${padT.toFixed(1)}px ${padX.toFixed(1)}px ${padB.toFixed(1)}px`;
+}
+function applyBannerSize(cell, it, poster){
+  const banner=cell.querySelector('.banner'); if(!banner) return;
+  const bs=it.bs||1;
+  banner.style.paddingLeft=banner.style.paddingRight=((poster?78:72)*bs).toFixed(1)+'px';
+  banner.style.paddingTop=((poster?8:6)*bs).toFixed(1)+'px';
+  banner.style.paddingBottom=((poster?10:9)*bs).toFixed(1)+'px';
+}
 
 // image transform helpers -----------------------------------------------
 function imgTransform(it){
@@ -388,6 +401,7 @@ function makeCell(item, idx, w){
   const decor = poster ? `<div class="decor" style="background-image:url('${decorFor(idx)}')"></div>` : '';
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
+  const bannerStyle = bannerPad(item, poster);
   const cur = (item.thb!==undefined ? item.thb : 'THB');
   const thb = poster
     ? `<div class="thbline zigzag"><span class="arw">&#8811;</span><span class="thb" contenteditable>${cur}</span><span class="arw">&#8810;</span></div>
@@ -398,10 +412,12 @@ function makeCell(item, idx, w){
     <div class="titlectl no-print">
       <button data-ts="-1" title="smaller title">A−</button>
       <button data-ts="1" title="bigger title">A+</button>
+      <button data-bs="-1" title="smaller background">▭−</button>
+      <button data-bs="1" title="bigger background">▭+</button>
       <input type="color" class="bcol" value="${bcol}" title="title background colour">
     </div>
     ${decor}
-    <div class="${bannerCls}">
+    <div class="${bannerCls}" style="${bannerStyle}">
       ${blobSvg(bcol, poster)}
       <span class="name" contenteditable style="font-size:${nameSize}px">${item.n}</span>
       <span class="sub" contenteditable style="font-size:${subSize}px">${item.s}</span>
@@ -515,10 +531,16 @@ boardsEl.addEventListener('click',e=>{
     syncBoard(si); SECTIONS[si].items.splice(+cell.dataset.idx,1); renderBoard(si); updateHead(si); return; }
 
   // per-product title size (live, no re-render)
-  const tb=e.target.closest('.titlectl button');
+  const tb=e.target.closest('.titlectl button[data-ts]');
   if(tb){ const cell=tb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
     const it=SECTIONS[si].items[idx]; it.ts=Math.min(2.2, Math.max(0.5, +(((it.ts||1)+(+tb.dataset.ts)*0.1)).toFixed(2)));
     applyCellTitle(cell, SECTIONS[si], idx); return; }
+
+  // per-product banner (white background) size (live, no re-render)
+  const bb=e.target.closest('.titlectl button[data-bs]');
+  if(bb){ const cell=bb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
+    const it=SECTIONS[si].items[idx]; it.bs=Math.min(2.5, Math.max(0.4, +(((it.bs||1)+(+bb.dataset.bs)*0.12)).toFixed(2)));
+    applyBannerSize(cell, it, STYLE==='poster'); return; }
 
   // zoom buttons
   const zb=e.target.closest('.zoomctl button');
