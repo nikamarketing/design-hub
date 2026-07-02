@@ -65,14 +65,15 @@ a{ color:inherit; }
   background-image:radial-gradient(rgba(255,255,255,.55) 1.3px, transparent 1.6px); background-size:13px 13px; }
 
 /* name brush banner */
-.banner{ position:relative; z-index:3; width:90%; min-height:40px; margin-top:2px; padding:5px 14px 7px;
+.banner{ position:relative; z-index:3; width:auto; max-width:96%; min-height:40px; margin-top:2px; padding:6px 42px 9px;
   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
   transform:rotate(-1deg);
-  background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20320%2096'%20preserveAspectRatio='none'%3E%3Cpath%20d='M10%2021%20C70%206%20142%209%20176%2013%20C232%206%20300%209%20312%2023%20C319%2046%20312%2067%20303%2079%20C242%2091%20150%2084%20120%2082%20C70%2087%2018%2084%2012%2074%20C3%2053%203%2034%2010%2021%20Z'%20fill='%23fdfaf3'/%3E%3C/svg%3E") center/100% 100% no-repeat;
-  background-color:#fdfaf3; border-radius:32px;
   filter:drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
-.name{ font-family:Anton; color:#E8730C; text-transform:uppercase; line-height:.92; letter-spacing:.3px; outline:none; }
-.sub{ font-family:Caveat; font-weight:700; color:#5a3a14; margin-top:1px; line-height:1; outline:none; }
+.banner .blobbg{ position:absolute; inset:0; width:100%; height:100%; z-index:-1; display:block; }
+.name{ font-family:Anton; color:#E8730C; text-transform:uppercase; line-height:.92; letter-spacing:.3px; outline:none;
+  position:relative; z-index:1; white-space:nowrap; max-width:100%; }
+.sub{ font-family:Caveat; font-weight:700; color:#5a3a14; margin-top:1px; line-height:1; outline:none;
+  position:relative; z-index:1; white-space:nowrap; max-width:100%; }
 
 /* photo */
 .photo{ position:relative; z-index:2; flex:1; width:100%; margin:1px 0; min-height:0;
@@ -98,7 +99,7 @@ a{ color:inherit; }
 .decor{ position:absolute; z-index:1; top:40%; right:4%; width:33%; height:34%;
   opacity:.20; pointer-events:none; background:no-repeat center/contain; transform:rotate(-6deg);
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
-.banner.brush{ width:94%; padding:7px 20px 9px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.4)); }
+.banner.brush{ width:auto; padding:8px 48px 10px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.4)); }
 /* per-product title controls (size + banner colour) */
 .titlectl{ position:absolute; z-index:6; top:7px; left:8px; display:flex; align-items:center; gap:4px;
   background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
@@ -251,6 +252,13 @@ const SQUIGGLE='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.
 const BLOB_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${color}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`);
 const BRUSH_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${color}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`);
 function bannerImg(color){ return (STYLE==='poster'?BRUSH_SVG:BLOB_SVG)(color||'#fdfaf3'); }
+// inline SVG blob layer — stretches reliably (also in html2canvas export) and lets the banner shrink-wrap the text
+function blobSvg(color, poster){
+  const c=color||'#fdfaf3';
+  return poster
+    ? `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${c}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`
+    : `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${c}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`;
+}
 function decorFor(idx){ return DECOR[idx % DECOR.length]; }
 
 function drawBg(canvas, si){
@@ -347,8 +355,8 @@ function applyCellTitle(cell, sec, idx){
 }
 function applyBannerColor(cell, it){
   const banner=cell.querySelector('.banner'); if(!banner) return;
-  banner.style.backgroundImage=`url('${bannerImg(it.bc||'#fdfaf3')}')`;
-  banner.style.backgroundColor='transparent';
+  const path=banner.querySelector('.blobbg path');
+  if(path) path.setAttribute('fill', it.bc||'#fdfaf3');
 }
 
 // image transform helpers -----------------------------------------------
@@ -380,7 +388,6 @@ function makeCell(item, idx, w){
   const decor = poster ? `<div class="decor" style="background-image:url('${decorFor(idx)}')"></div>` : '';
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
-  const bannerStyle = `background-image:url('${bannerImg(bcol)}');background-color:transparent;${poster?'border-radius:4px;':''}`;
   const cur = (item.thb!==undefined ? item.thb : 'THB');
   const thb = poster
     ? `<div class="thbline zigzag"><span class="arw">&#8811;</span><span class="thb" contenteditable>${cur}</span><span class="arw">&#8810;</span></div>
@@ -394,7 +401,8 @@ function makeCell(item, idx, w){
       <input type="color" class="bcol" value="${bcol}" title="title background colour">
     </div>
     ${decor}
-    <div class="${bannerCls}" style="${bannerStyle}">
+    <div class="${bannerCls}">
+      ${blobSvg(bcol, poster)}
       <span class="name" contenteditable style="font-size:${nameSize}px">${item.n}</span>
       <span class="sub" contenteditable style="font-size:${subSize}px">${item.s}</span>
     </div>
