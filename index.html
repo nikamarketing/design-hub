@@ -45,7 +45,7 @@ a{ color:inherit; }
 .hint b{ color:#F4B400; }
 
 /* ---------- board ---------- */
-.boardhead{ display:flex; align-items:center; gap:14px; padding:22px 22px 8px; }
+.boardhead{ display:flex; align-items:center; gap:14px; padding:22px 22px 8px; flex-wrap:wrap; }
 .boardhead h2{ font-family:Anton; font-size:20px; margin:0; color:#FFF4DD; letter-spacing:.5px; }
 .boardhead .dim{ font-size:12px; color:#F4B400; border:1px solid #4a3a1e; padding:3px 9px; border-radius:6px; letter-spacing:.5px; }
 .boardhead .cells{ font-size:12px; color:#9b8e76; }
@@ -108,17 +108,17 @@ a{ color:inherit; }
 .titlectl input.bcol{ width:22px; height:22px; padding:0; border:none; border-radius:5px; background:none; cursor:pointer; }
 .boardhead .chk{ display:flex; align-items:center; gap:6px; font-size:12px; color:#9b8e76; }
 .boardhead input.seccolor{ width:30px; height:26px; padding:1px; background:#241c12; border:1px solid #3a2e1c; border-radius:6px; cursor:pointer; }
-.thbline.zigzag .arw{ font-size:18px; line-height:1; }
-.squiggle{ width:48px; height:11px; margin:3px auto 0; background:no-repeat center/contain; pointer-events:none; }
+.squiggle{ width:48px; height:11px; margin:0 auto 3px; background:no-repeat center/contain; pointer-events:none; }
 .cell.is-set .squiggle{ display:none; }
 
-/* price */
-.price{ position:relative; z-index:3; margin-bottom:3px; text-align:center; color:#fff; line-height:.82; }
-.pnum{ font-family:Anton; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.30); outline:none; white-space:nowrap; }
-.thbline{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:2px; }
-.thbline .arw{ color:#F4B400; font-weight:700; font-size:13px; }
-.thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; font-size:12px; }
-.cell.is-set .thbline{ display:none; }
+/* price — editable number with THB right next to it; starts blank */
+.price{ position:relative; z-index:3; margin-bottom:3px; display:flex; align-items:baseline;
+  justify-content:center; gap:7px; color:#fff; line-height:.82; }
+.pnum{ font-family:Anton; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.30); outline:none; white-space:nowrap;
+  min-width:22px; text-align:center; }
+.pnum:empty::before{ content:'···'; color:rgba(255,255,255,.5); text-shadow:none; }
+.thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; }
+.cell.is-set .thb{ display:none; }
 
 /* SET stamp */
 .setstamp{ display:none; position:absolute; z-index:4; top:54px; right:12%;
@@ -130,6 +130,9 @@ a{ color:inherit; }
 /* controls */
 .del{ position:absolute; z-index:6; top:8px; right:9px; width:24px; height:24px; border-radius:50%;
   border:none; background:rgba(0,0,0,.55); color:#fff; font-size:15px; cursor:pointer; line-height:1; }
+.splitbtn{ position:absolute; z-index:6; top:8px; right:40px; width:24px; height:24px; border-radius:50%;
+  border:none; background:rgba(0,0,0,.55); color:#fff; font-family:Oswald; font-weight:700; font-size:11px;
+  cursor:pointer; line-height:1; }
 .addcell{ align-self:center; margin:0 6px; }
 .addcell button{ width:46px; height:46px; border-radius:50%; border:2px dashed #4a3a1e; background:#16110a;
   color:#F4B400; font-size:24px; cursor:pointer; }
@@ -137,6 +140,8 @@ a{ color:inherit; }
 @media print{ .no-print{ display:none !important; } body{ background:#fff; } }
 .exporting .no-print{ display:none !important; }
 .exporting .name,.exporting .sub,.exporting .pnum{ caret-color:transparent; }
+.exporting .price.blank{ visibility:hidden; }
+.exporting .pnum:empty::before{ content:none; }
 </style>
 </head>
 <body>
@@ -160,7 +165,7 @@ a{ color:inherit; }
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name, description or price</b> to edit; use <b>A− / A+</b> to resize titles if one overflows its banner. Type <b>SET</b> as a price for a SET stamp. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready. <b>Export PDF</b> gives exact-size pages; <b>PNG</b> gives one high-res strip per board for the sign maker.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit. <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price). Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
 </div>
 
 <div id="boards"></div>
@@ -169,36 +174,36 @@ a{ color:inherit; }
 const TONES = ["tone-red","tone-orange","tone-yellow"];
 const SECTIONS = [
  {name:"Sol Master", dim:"440 x 35 cm", items:[
-   {n:"ISKENDER KEBAB", s:"Tomato sauce & yogurt", p:"450"},
-   {n:"TURKISH PIDE", s:"Boat-shaped Turkish pizza", p:"320"},
-   {n:"LAHMACUN", s:"Spiced Turkish flatbread", p:"SET"},
-   {n:"MIX DONER PLATE", s:"Chicken & lamb + rice", p:"300"},
-   {n:"ADANA KEBAB", s:"Spicy minced lamb skewer", p:"SET"},
-   {n:"URFA KEBAB", s:"Mild minced lamb skewer", p:"SET"},
-   {n:"KOFTE PLATE", s:"Grilled meatballs + rice", p:"SET"},
-   {n:"MIXED GRILL", s:"Chef's meat selection", p:"SET"},
+   {n:"ISKENDER KEBAB", s:"Tomato sauce & yogurt", p:""},
+   {n:"TURKISH PIDE", s:"Boat-shaped Turkish pizza", p:""},
+   {n:"LAHMACUN", s:"Spiced Turkish flatbread", p:""},
+   {n:"MIX DONER PLATE", s:"Chicken & lamb + rice", p:""},
+   {n:"ADANA KEBAB", s:"Spicy minced lamb skewer", p:""},
+   {n:"URFA KEBAB", s:"Mild minced lamb skewer", p:""},
+   {n:"KOFTE PLATE", s:"Grilled meatballs + rice", p:""},
+   {n:"MIXED GRILL", s:"Chef's meat selection", p:""},
  ]},
- {name:"Middle", dim:"140 x 35 cm", items:[
-   {n:"DONER DURUM", s:"Chicken or lamb wrap", p:"SET"},
-   {n:"CHICKEN ROLL", s:"Tavuk durum", p:"120"},
-   {n:"LAMB ROLL", s:"Kuzu durum", p:"140"},
+ {name:"Middle", dim:"137.5 x 35 cm", items:[
+   {n:"DONER DURUM", s:"Chicken or lamb wrap", p:""},
+   {n:"CHICKEN ROLL", s:"Tavuk durum", p:""},
+   {n:"LAMB ROLL", s:"Kuzu durum", p:""},
  ]},
- {name:"Right 2", dim:"285 x 35 cm", items:[
-   {n:"FRENCH FRIES", s:"Patates kizartmasi", p:"120"},
-   {n:"HUMMUS", s:"Chickpea dip", p:"140"},
-   {n:"CACIK", s:"Yogurt & cucumber", p:"140"},
-   {n:"BUTTER RICE", s:"Pilav", p:"80"},
-   {n:"SOFT DRINKS", s:"Cola, Ayran, Water", p:"SET"},
+ {name:"Right 2", dim:"282 x 35 cm", items:[
+   {n:"FRENCH FRIES", s:"Patates kizartmasi", p:""},
+   {n:"HUMMUS", s:"Chickpea dip", p:""},
+   {n:"CACIK", s:"Yogurt & cucumber", p:""},
+   {n:"BUTTER RICE", s:"Pilav", p:""},
+   {n:"SOFT DRINKS", s:"Cola, Ayran, Water", p:""},
  ]},
  {name:"Right 1", dim:"460 x 35 cm", items:[
-   {n:"ROLL SET", s:"Chicken or Lamb wrap", p:"180 / 200"},
-   {n:"FALAFEL PITA", s:"Fresh falafel with salad", p:"140"},
-   {n:"CHICKEN PITA", s:"Grilled chicken pita", p:"160"},
-   {n:"LAMB PITA", s:"Tender lamb pita", p:"180"},
-   {n:"LAMB KEBAB PLATE", s:"Sliced lamb with rice", p:"SET"},
-   {n:"PIZZA TURKO MARGARITA", s:"Stone-baked pizza", p:"SET"},
-   {n:"LENTIL SOUP", s:"Traditional lentil soup", p:"120"},
-   {n:"SPECIAL KEBAB", s:"Chef's Special", p:"250"},
+   {n:"ROLL SET", s:"Chicken or Lamb wrap", p:""},
+   {n:"FALAFEL PITA", s:"Fresh falafel with salad", p:""},
+   {n:"CHICKEN PITA", s:"Grilled chicken pita", p:""},
+   {n:"LAMB PITA", s:"Tender lamb pita", p:""},
+   {n:"LAMB KEBAB PLATE", s:"Sliced lamb with rice", p:""},
+   {n:"PIZZA TURKO MARGARITA", s:"Stone-baked pizza", p:""},
+   {n:"LENTIL SOUP", s:"Traditional lentil soup", p:""},
+   {n:"SPECIAL KEBAB", s:"Chef's Special", p:""},
  ]},
 ];
 
@@ -254,7 +259,7 @@ function bannerImg(color){ return (STYLE==='poster'?BRUSH_SVG:BLOB_SVG)(color||'
 function decorFor(idx){ return DECOR[idx % DECOR.length]; }
 
 function drawBg(canvas, si){
-  const sec=SECTIONS[si], n=sec.items.length, cw=cellWidth(sec), W=n*cw, H=BOARD_H, dpr=2;
+  const sec=SECTIONS[si], n=sec.items.length, xs=cellEdges(sec), W=xs[n]||0, H=BOARD_H, dpr=2;
   canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -265,8 +270,9 @@ function drawBg(canvas, si){
   const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
   const rnd=rng(si*131+9);
   for(let i=0;i<n;i++){
+    const cw=xs[i+1]-xs[i];
     const g0=(i>0)?gap/2:0, g1=(i<n-1)?gap/2:0;
-    const bL=i*cw+g0, bR=(i+1)*cw-g1;
+    const bL=xs[i]+g0, bR=xs[i+1]-g1;
     const tL=(i===0)?0:bL+slant, tR=(i===n-1)?W:bR+slant;
     ctx.save();
     ctx.beginPath(); ctx.moveTo(tL,0); ctx.lineTo(tR,0); ctx.lineTo(bR,H); ctx.lineTo(bL,H); ctx.closePath(); ctx.clip();
@@ -324,12 +330,14 @@ function drawBg(canvas, si){
 function setStyle(v){ STYLE=v; SECTIONS.forEach((_,si)=>syncBoard(si)); SECTIONS.forEach((_,si)=>renderBoard(si)); }
 
 
-function cellWidth(sec){
-  const cm = parseInt(sec.dim);      // long side cm
-  const cells = sec.items.length;
-  const cellcm = cm/cells;
-  return BOARD_H * cellcm/35;         // true 57x35-style landscape ratio
-}
+/* each item has a width weight w (default 1); a split box becomes two boxes of w/2,
+   so the rest of the board keeps its exact physical size */
+function totalWeight(sec){ return sec.items.reduce((a,it)=>a+(it.w||1),0) || 1; }
+function boardWidthPx(sec){ return BOARD_H * parseFloat(sec.dim)/35; }   // parseFloat: dims like 137.5 cm
+function cellWidth(sec, it){ return boardWidthPx(sec) * (((it&&it.w)||1)/totalWeight(sec)); }
+function cellCm(sec, it){ return parseFloat(sec.dim) * (((it&&it.w)||1)/totalWeight(sec)); }
+function cellEdges(sec){ const xs=[0]; let x=0;
+  sec.items.forEach(it=>{ x+=cellWidth(sec,it); xs.push(x); }); return xs; }
 
 function isSet(p){ return /^\s*set\s*$/i.test(p||""); }
 
@@ -340,7 +348,7 @@ function baseTitleSizes(w){ const p=STYLE==='poster';
 // apply a cell's title size live (no board re-render → background untouched)
 function applyCellTitle(cell, sec, idx){
   const it=sec.items[idx]; if(!it) return;
-  const b=baseTitleSizes(cellWidth(sec)), ts=(it.ts||1)*TITLE_SCALE;
+  const b=baseTitleSizes(cellWidth(sec,it)), ts=(it.ts||1)*TITLE_SCALE;
   const n=cell.querySelector('.name'), s=cell.querySelector('.sub');
   if(n) n.style.fontSize=(b.name*ts)+'px';
   if(s) s.style.fontSize=(b.sub*ts)+'px';
@@ -381,12 +389,11 @@ function makeCell(item, idx, w){
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = `background-image:url('${bannerImg(bcol)}');background-color:transparent;${poster?'border-radius:4px;':''}`;
-  const thb = poster
-    ? `<div class="thbline zigzag"><span class="arw">&#8811;</span><span class="thb">THB</span><span class="arw">&#8810;</span></div>
-       <div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>`
-    : `<div class="thbline"><span class="arw">&rsaquo;</span><span class="thb">THB</span><span class="arw">&lsaquo;</span></div>`;
+  const thbSize = Math.max(11, Math.round(priceSize*0.4));
+  const squig = poster ? `<div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>` : '';
   c.innerHTML = `
     <button class="del no-print" title="remove">×</button>
+    <button class="splitbtn no-print" title="split this box into 2">½</button>
     <div class="titlectl no-print">
       <button data-ts="-1" title="smaller title">A−</button>
       <button data-ts="1" title="bigger title">A+</button>
@@ -402,31 +409,37 @@ function makeCell(item, idx, w){
     </div>
     <div class="price">
       <span class="pnum" contenteditable style="font-size:${priceSize}px">${item.p}</span>
-      ${thb}
-    </div>`;
+      <span class="thb" style="font-size:${thbSize}px">THB</span>
+    </div>
+    ${squig}`;
   return c;
 }
 
 function renderBoard(si){
   const sec = SECTIONS[si];
-  const w = cellWidth(sec);
   const board = document.querySelector(`.board[data-sec="${si}"]`);
   board.innerHTML = '';
   const cv=document.createElement('canvas'); cv.className='bg'; board.appendChild(cv);
-  sec.items.forEach((it,idx)=> board.appendChild(makeCell(it,idx,w)));
+  sec.items.forEach((it,idx)=> board.appendChild(makeCell(it,idx,cellWidth(sec,it))));
   // add-cell button
   const add = document.createElement('div');
   add.className='addcell no-print';
   add.innerHTML='<button title="add item">+</button>';
   add.querySelector('button').onclick=()=>{ syncBoard(si);
-    SECTIONS[si].items.push({n:"NEW ITEM",s:"Description",p:"0"}); renderBoard(si); updateHead(si); };
+    SECTIONS[si].items.push({n:"NEW ITEM",s:"Description",p:""}); renderBoard(si); updateHead(si); };
   board.appendChild(add);
   drawBg(cv, si);
 }
 
+function headLabel(sec){
+  const ws=sec.items.map(it=>it.w||1);
+  const uniform=ws.every(w=>w===ws[0]);
+  const fmt=v=>Math.round(v*10)/10;
+  if(uniform) return sec.items.length+" boxes · "+fmt(parseFloat(sec.dim)/sec.items.length)+" cm each";
+  return sec.items.length+" boxes · "+sec.items.map(it=>fmt(cellCm(sec,it))).join(" / ")+" cm";
+}
 function updateHead(si){
-  const sec=SECTIONS[si];
-  document.querySelector(`.cellcount[data-sec="${si}"]`).textContent = sec.items.length+" cells · "+Math.round(parseInt(sec.dim)/sec.items.length)+" cm each";
+  document.querySelector(`.cellcount[data-sec="${si}"]`).textContent = headLabel(SECTIONS[si]);
 }
 
 function syncBoard(si){  // read live DOM edits back into the model
@@ -451,7 +464,7 @@ function buildAll(){
       <div class="boardhead no-print">
         <h2>${sec.name}</h2>
         <span class="dim">${sec.dim}</span>
-        <span class="cells cellcount" data-sec="${si}">${sec.items.length} cells · ${Math.round(parseInt(sec.dim)/sec.items.length)} cm each</span>
+        <span class="cells cellcount" data-sec="${si}">${headLabel(sec)}</span>
         <span class="bspacer"></span>
         <label class="chk" title="set this whole board to one colour">Board colour <input type="color" class="seccolor" data-sec="${si}" value="${sec.bg||'#a01818'}"></label>
         <button class="btn ghost" onclick="downloadPNG(${si})">Download PNG</button>
@@ -484,7 +497,7 @@ function setPhoto(photoEl,file){
     if(it){ it.img=e.target.result; it.z=1; it.x=0; it.y=0; }
     const cell=cellOf(photoEl); const board=cell.closest('.board'); const si=+board.dataset.sec;
     const idx=+cell.dataset.idx;
-    const w=cellWidth(SECTIONS[si]);
+    const w=cellWidth(SECTIONS[si], SECTIONS[si].items[idx]);
     const fresh=makeCell(SECTIONS[si].items[idx], idx, w);
     cell.replaceWith(fresh);
   };
@@ -501,6 +514,15 @@ boardsEl.addEventListener('click',e=>{
   const del=e.target.closest('.del');
   if(del){ const cell=del.closest('.cell'); const board=cell.closest('.board'); const si=+board.dataset.sec;
     syncBoard(si); SECTIONS[si].items.splice(+cell.dataset.idx,1); renderBoard(si); updateHead(si); return; }
+
+  // split one box into two half-width boxes (rest of the board keeps its size)
+  const sp=e.target.closest('.splitbtn');
+  if(sp){ const cell=sp.closest('.cell'); const si=+cell.closest('.board').dataset.sec;
+    syncBoard(si);
+    const idx=+cell.dataset.idx, it=SECTIONS[si].items[idx];
+    const half=(it.w||1)/2; it.w=half;
+    SECTIONS[si].items.splice(idx+1,0,{n:"NEW ITEM",s:"Description",p:"",w:half});
+    renderBoard(si); updateHead(si); return; }
 
   // per-product title size (live, no re-render)
   const tb=e.target.closest('.titlectl button');
@@ -580,7 +602,7 @@ boardsEl.addEventListener('focusout',e=>{
     const cell=e.target.closest('.cell');
     let t=e.target.textContent.trim();
     if(isSet(t)){ e.target.textContent='SET'; cell.classList.add('is-set'); }
-    else cell.classList.remove('is-set');
+    else { cell.classList.remove('is-set'); if(!t) e.target.innerHTML=''; }
   }
 });
 
@@ -603,11 +625,16 @@ function exportScale(board, si, dpi){
 
 async function snap(board, scale){
   const {W,H}=boardPx(board);
+  // boxes with no price typed yet export with no price/THB at all
+  const blanks=[...board.querySelectorAll('.pnum')].filter(p=>!p.textContent.trim())
+    .map(p=>p.closest('.price'));
+  blanks.forEach(el=>el.classList.add('blank'));
   document.body.classList.add('exporting');
   await document.fonts.ready;
   const canvas=await html2canvas(board,{backgroundColor:'#0a0a0a',scale,useCORS:true,
     width:W,height:H,windowWidth:W+80});
   document.body.classList.remove('exporting');
+  blanks.forEach(el=>el.classList.remove('blank'));
   return canvas;
 }
 function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
