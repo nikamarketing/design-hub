@@ -98,6 +98,14 @@ a{ color:inherit; }
 .decor{ position:absolute; z-index:1; top:40%; right:4%; width:33%; height:34%;
   opacity:.20; pointer-events:none; background:no-repeat center/contain; transform:rotate(-6deg);
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+.decor.ist{ top:35%; right:5%; width:37%; height:37%; opacity:.24; transform:rotate(-4deg); }
+
+/* 3D Effect style: extruded text + deeper shadows (panel bevels drawn on the bg canvas) */
+body[data-style="3d"] .pnum{ text-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 0 rgba(0,0,0,.28),
+  0 6px 0 rgba(0,0,0,.20),0 9px 12px rgba(0,0,0,.55); }
+body[data-style="3d"] .name{ text-shadow:0 2px 0 rgba(0,0,0,.16),0 4px 5px rgba(0,0,0,.22); }
+body[data-style="3d"] .banner{ filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
+body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)); }
 .banner.brush{ width:94%; padding:7px 20px 9px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.4)); }
 /* per-product title controls (size + banner colour) */
 .titlectl{ position:absolute; z-index:6; top:7px; left:8px; display:flex; align-items:center; gap:4px;
@@ -155,6 +163,8 @@ a{ color:inherit; }
     <option value="straight">Straight</option>
     <option value="horizontal">Horizontal</option>
     <option value="poster">Poster (Festive)</option>
+    <option value="3d">3D Effect</option>
+    <option value="istanbul">Istanbul Theme</option>
   </select>
   <label class="chk"><input type="checkbox" id="bgLines" checked onchange="setBgLines(this.checked)">Background lines</label>
   <label class="chk"><input type="checkbox" id="solidBg" onchange="setSolid(this.checked)">Single colour</label>
@@ -251,6 +261,28 @@ const _SVG=[
  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><path d="M30 68 C16 68 12 50 26 46 C20 30 44 22 50 34 C56 22 80 30 74 46 C88 50 84 68 70 68 Z"/><path d="M32 68 H68 L66 86 H34 Z"/></svg>`,
 ];
 const DECOR=_SVG.map(s=>'data:image/svg+xml,'+encodeURIComponent(s));
+
+/* Istanbul doodle icons: landmarks, culture & street life — deliberately no mosque figures */
+const _IST=[
+ // Galata Tower
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 130" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M45 6 L26 40 H64 Z"/><path d="M24 40 H66 L62 54 H28 Z"/><path d="M30 54 L28 118 M60 54 L62 118"/><path d="M20 118 H70"/><circle cx="38" cy="47" r="2.5" fill="#ffffff"/><circle cx="52" cy="47" r="2.5" fill="#ffffff"/><path d="M40 78 h10 M40 98 h10"/></svg>`,
+ // Bosphorus Bridge
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 100" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 64 H164"/><path d="M42 64 V20 M128 64 V20"/><path d="M42 24 Q85 62 128 24"/><path d="M6 44 L42 24 M128 24 L164 44"/><path d="M60 47 V64 M85 52 V64 M110 47 V64"/><path d="M14 84 Q24 78 34 84 T54 84 T74 84 T94 84 T114 84 T134 84 T154 84"/></svg>`,
+ // nostalgic tram
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 110" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="34" width="106" height="46" rx="9"/><path d="M36 46 h18 v18 h-18 Z M66 46 h18 v18 h-18 Z M96 46 h18 v18 h-18 Z"/><circle cx="50" cy="92" r="8"/><circle cx="100" cy="92" r="8"/><path d="M64 34 L80 14 H96"/><path d="M22 60 h-8 M128 60 h8"/></svg>`,
+ // Bosphorus ferry
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 100" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 60 H132 L116 78 H32 Z"/><path d="M40 60 V44 H110 V60"/><rect x="60" y="26" width="14" height="18"/><circle cx="52" cy="52" r="2.5" fill="#ffffff"/><circle cx="70" cy="52" r="2.5" fill="#ffffff"/><circle cx="96" cy="52" r="2.5" fill="#ffffff"/><path d="M14 88 Q24 82 34 88 T54 88 T74 88 T94 88 T114 88 T134 88"/></svg>`,
+ // seagulls
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 70" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 34 Q24 18 36 32 Q48 18 60 34"/><path d="M52 52 Q61 42 70 51 Q79 42 88 52"/><path d="M74 22 Q81 14 88 21 Q95 14 102 22"/></svg>`,
+ // Turkish tea glass
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 115" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M26 32 C26 56 31 62 34 72 C36 80 54 80 56 72 C59 62 64 56 64 32 Z"/><path d="M30 86 H60"/><path d="M22 96 H68"/><path d="M38 10 C36 16 41 19 39 25 M52 10 C50 16 55 19 53 25"/></svg>`,
+ // Maiden's Tower on its islet
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 105" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M56 30 L65 14 L74 30 Z"/><path d="M58 30 V52 M72 30 V52"/><path d="M50 52 H80 M46 52 V70 M84 52 V70"/><path d="M38 70 H92"/><circle cx="65" cy="40" r="2.5" fill="#ffffff"/><path d="M14 88 Q24 82 34 88 T54 88 T74 88 T94 88 T114 88"/></svg>`,
+ // street lamp
+ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 125" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M40 116 V36"/><path d="M26 116 H54"/><path d="M30 36 H50 L45 14 H35 Z"/><circle cx="40" cy="26" r="3" fill="#ffffff"/></svg>`,
+];
+const IST_DECOR=_IST.map(s=>'data:image/svg+xml,'+encodeURIComponent(s));
+function istDecorFor(idx){ return IST_DECOR[idx % IST_DECOR.length]; }
 const SQUIGGLE='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 16" fill="none" stroke="#F4B400" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9 L19 4 L33 13 L47 4 L61 13 L75 4 L89 13 L95 9"/></svg>`);
 // title banner shapes (colour-aware): rounded blob (default) and rough brush (poster)
 const BLOB_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${color}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`);
@@ -264,9 +296,9 @@ function drawBg(canvas, si){
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
-  // slant = diagonal seam offset; gap = black separator between tiles (horizontal style)
-  const slant=(STYLE==='straight')?0:20;
-  const gap  =(STYLE==='horizontal')?13:0;
+  // slant = diagonal seam offset; gap = black separator between tiles (horizontal & 3d styles)
+  const slant=(STYLE==='straight'||STYLE==='3d')?0:20;
+  const gap  =(STYLE==='horizontal')?13:(STYLE==='3d'?14:0);
   const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
   const rnd=rng(si*131+9);
   for(let i=0;i<n;i++){
@@ -308,6 +340,22 @@ function drawBg(canvas, si){
     // speckle
     ctx.fillStyle='rgba(255,255,255,0.05)';
     for(let sp=0;sp<28;sp++){ ctx.fillRect(bL+rnd()*cw, rnd()*H, 2,2); }
+    // 3D Effect: bevel the tile — lit top/left edges, shaded right edge, thick dark base
+    if(STYLE==='3d'){
+      const ew=Math.min(16, cw*0.06+6);
+      let g3=ctx.createLinearGradient(0,0,0,ew+8);
+      g3.addColorStop(0,'rgba(255,255,255,.5)'); g3.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g3; ctx.fillRect(bL,0,bR-bL,ew+8);
+      g3=ctx.createLinearGradient(bL,0,bL+ew,0);
+      g3.addColorStop(0,'rgba(255,255,255,.32)'); g3.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g3; ctx.fillRect(bL,0,ew,H);
+      g3=ctx.createLinearGradient(bR-ew,0,bR,0);
+      g3.addColorStop(0,'rgba(0,0,0,0)'); g3.addColorStop(1,'rgba(0,0,0,.38)');
+      ctx.fillStyle=g3; ctx.fillRect(bR-ew,0,ew,H);
+      g3=ctx.createLinearGradient(0,H-26,0,H);
+      g3.addColorStop(0,'rgba(0,0,0,0)'); g3.addColorStop(.7,'rgba(0,0,0,.28)'); g3.addColorStop(1,'rgba(0,0,0,.5)');
+      ctx.fillStyle=g3; ctx.fillRect(bL,H-26,bR-bL,26);
+    }
     // poster: two-tone halftone dot clusters (top-left + bottom-right corners)
     if(STYLE==='poster'){
       const acc=SOLID_BG ? shade(solidCol,.28) : TONE_COLORS[(i+1)%3][1];
@@ -326,8 +374,71 @@ function drawBg(canvas, si){
     // crisp seam shadow on the diagonal (skip when a real black gap already separates tiles)
     if(i<n-1 && gap===0){ ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.32)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tR,0); ctx.lineTo(bR,H); ctx.stroke(); ctx.restore(); }
   }
+  if(STYLE==='istanbul') drawSkyline(ctx, W, H, si);
 }
-function setStyle(v){ STYLE=v; SECTIONS.forEach((_,si)=>syncBoard(si)); SECTIONS.forEach((_,si)=>renderBoard(si)); }
+
+/* Istanbul skyline silhouette across the whole board: row houses, Galata Tower,
+   Bosphorus Bridge, Maiden's Tower + seagulls — deliberately no mosque shapes */
+function drawSkyline(ctx, W, H, si){
+  const rnd=rng(si*977+31), col='rgba(24,6,2,0.30)';
+  ctx.save(); ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineCap='round'; ctx.lineJoin='round';
+  const base=H, seq=['houses','galata','houses','bridge','houses','maiden'];
+  let x=8, k=0;
+  while(x<W-46){
+    let kind=seq[k++%seq.length];
+    if(kind==='bridge' && W-x<180) kind='houses';
+    if(kind==='houses'){
+      const count=2+Math.floor(rnd()*3);
+      for(let j=0;j<count && x<W-36;j++){
+        const w=26+rnd()*26, h=18+rnd()*26;
+        ctx.fillRect(x,base-h,w,h);
+        ctx.beginPath(); ctx.moveTo(x-2,base-h); ctx.lineTo(x+w/2,base-h-7-rnd()*7); ctx.lineTo(x+w+2,base-h); ctx.closePath(); ctx.fill();
+        x+=w+4;
+      }
+      x+=10;
+    } else if(kind==='galata'){
+      const h=52+rnd()*12, w=16;
+      ctx.beginPath(); ctx.moveTo(x+2,base); ctx.lineTo(x+3.5,base-h); ctx.lineTo(x+w-3.5,base-h); ctx.lineTo(x+w-2,base); ctx.closePath(); ctx.fill();
+      ctx.fillRect(x-1,base-h-8,w+2,9);
+      ctx.beginPath(); ctx.moveTo(x-1,base-h-8); ctx.lineTo(x+w/2,base-h-24); ctx.lineTo(x+w+1,base-h-8); ctx.closePath(); ctx.fill();
+      x+=w+16;
+    } else if(kind==='bridge'){
+      const span=Math.min(190, W-x-16);
+      const deckY=base-20, t1=x+22, t2=x+span-22, topY=base-60;
+      ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(x,deckY); ctx.lineTo(x+span,deckY);
+      ctx.moveTo(t1,base); ctx.lineTo(t1,topY);
+      ctx.moveTo(t2,base); ctx.lineTo(t2,topY); ctx.stroke();
+      ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.moveTo(t1,topY); ctx.quadraticCurveTo((t1+t2)/2, deckY-4, t2,topY);
+      ctx.moveTo(t1,topY); ctx.lineTo(x,deckY);
+      ctx.moveTo(t2,topY); ctx.lineTo(x+span,deckY); ctx.stroke();
+      ctx.lineWidth=1.6;
+      for(let hx=t1+16; hx<t2-10; hx+=18){
+        const t=(hx-t1)/(t2-t1);
+        const cy=(1-t)*(1-t)*topY + 2*t*(1-t)*(deckY-4) + t*t*topY;
+        ctx.beginPath(); ctx.moveTo(hx,cy); ctx.lineTo(hx,deckY); ctx.stroke();
+      }
+      x+=span+14;
+    } else {  // Maiden's Tower on its islet
+      const w=13, h=26;
+      ctx.fillRect(x+5,base-h-8,w,h);
+      ctx.beginPath(); ctx.moveTo(x+3,base-h-8); ctx.lineTo(x+5+w/2,base-h-20); ctx.lineTo(x+w+7,base-h-8); ctx.closePath(); ctx.fill();
+      ctx.fillRect(x,base-10,w+10,10);
+      x+=w+18;
+    }
+  }
+  // seagulls in the sky
+  ctx.strokeStyle='rgba(255,255,255,0.32)'; ctx.lineWidth=2.5;
+  const gulls=Math.max(3, Math.round(W/230));
+  for(let g=0; g<gulls; g++){
+    const gx=24+rnd()*(W-60), gy=24+rnd()*44, s=5+rnd()*4;
+    ctx.beginPath(); ctx.moveTo(gx-2*s,gy); ctx.quadraticCurveTo(gx-s,gy-s*1.4,gx,gy);
+    ctx.quadraticCurveTo(gx+s,gy-s*1.4,gx+2*s,gy); ctx.stroke();
+  }
+  ctx.restore();
+}
+function setStyle(v){ STYLE=v; document.body.dataset.style=v; SECTIONS.forEach((_,si)=>syncBoard(si)); SECTIONS.forEach((_,si)=>renderBoard(si)); }
 
 
 /* each item has a width weight w (default 1); a split box becomes two boxes of w/2,
@@ -385,7 +496,8 @@ function makeCell(item, idx, w){
          <button data-z="replace" class="wide" title="replace photo">photo</button>
        </div>`
     : `<span class="addhint no-print">+ ADD<br>PHOTO</span>`;
-  const decor = poster ? `<div class="decor" style="background-image:url('${decorFor(idx)}')"></div>` : '';
+  const decor = poster ? `<div class="decor" style="background-image:url('${decorFor(idx)}')"></div>`
+    : (STYLE==='istanbul' ? `<div class="decor ist" style="background-image:url('${istDecorFor(idx)}')"></div>` : '');
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = `background-image:url('${bannerImg(bcol)}');background-color:transparent;${poster?'border-radius:4px;':''}`;
@@ -474,6 +586,7 @@ function buildAll(){
     renderBoard(si);
   });
 }
+document.body.dataset.style=STYLE;
 buildAll();
 
 /* ---------- interactions ---------- */
