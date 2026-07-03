@@ -177,7 +177,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text and <b>▭− / ▭+</b> to resize the white banner behind it. <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text, <b>▭− / ▭+</b> to resize the white banner behind it, and <b>◇</b> to change its shape (blob / brush / ribbon / oval). <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
 </div>
 
 <div id="boards"></div>
@@ -290,12 +290,24 @@ const SQUIGGLE='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.
 const BLOB_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${color}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`);
 const BRUSH_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${color}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`);
 function bannerImg(color){ return (STYLE==='poster'?BRUSH_SVG:BLOB_SVG)(color||'#fdfaf3'); }
-// inline SVG blob layer — stretches reliably (also in html2canvas export) and lets the banner shrink-wrap the text
-function blobSvg(color, poster){
+// title background shapes — ◇ button on each box cycles through them
+const BANNER_SHAPES=[
+ {name:'blob',   vb:'0 0 320 96', d:'M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z'},
+ {name:'brush',  vb:'0 0 340 92', d:'M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z'},
+ {name:'ribbon', vb:'0 0 360 96', d:'M6 18 H354 L332 48 L354 78 H6 L28 48 Z'},
+ {name:'oval',   vb:'0 0 320 96', d:'M160 4 C250 4 316 22 316 48 C316 74 250 92 160 92 C70 92 4 74 4 48 C4 22 70 4 160 4 Z'},
+];
+function shapeIdxFor(item, poster){ return (item&&item.shape!==undefined) ? item.shape : (poster?1:0); }
+// inline SVG shape layer — stretches reliably (also in html2canvas export) and lets the banner shrink-wrap the text
+function blobSvg(color, poster, item){
   const c=color||'#fdfaf3';
-  return poster
-    ? `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${c}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`
-    : `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${c}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`;
+  const s=BANNER_SHAPES[shapeIdxFor(item,poster)%BANNER_SHAPES.length];
+  return `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="${s.vb}" preserveAspectRatio="none"><path fill="${c}" d="${s.d}"/></svg>`;
+}
+function applyBannerShape(cell, it){
+  const banner=cell.querySelector('.banner'); if(!banner) return;
+  const old=banner.querySelector('.blobbg'); if(old) old.remove();
+  banner.insertAdjacentHTML('afterbegin', blobSvg(it.bc, STYLE==='poster', it));
 }
 function decorFor(idx){ return DECOR[idx % DECOR.length]; }
 
@@ -579,11 +591,12 @@ function makeCell(item, idx, w){
       <button data-ts="1" title="bigger title">A+</button>
       <button data-bs="-1" title="smaller background">▭−</button>
       <button data-bs="1" title="bigger background">▭+</button>
+      <button data-shape="1" title="title background shape (blob / brush / ribbon / oval)">◇</button>
       <input type="color" class="bcol" value="${bcol}" title="title background colour">
     </div>
     ${decor}
     <div class="${bannerCls}" style="${bannerStyle}">
-      ${blobSvg(bcol, poster)}
+      ${blobSvg(bcol, poster, item)}
       <span class="name" contenteditable style="font-size:${nameSize}px">${item.n}</span>
       <span class="sub" contenteditable style="font-size:${subSize}px">${item.s}</span>
     </div>
@@ -722,6 +735,13 @@ boardsEl.addEventListener('click',e=>{
   if(bb){ const cell=bb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
     const it=SECTIONS[si].items[idx]; it.bs=Math.min(2.5, Math.max(0.4, +(((it.bs||1)+(+bb.dataset.bs)*0.12)).toFixed(2)));
     applyBannerSize(cell, it, STYLE==='poster'); return; }
+
+  // per-product banner shape — cycles blob → brush → ribbon → oval (live, no re-render)
+  const sb=e.target.closest('.titlectl button[data-shape]');
+  if(sb){ const cell=sb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
+    const it=SECTIONS[si].items[idx];
+    it.shape=(shapeIdxFor(it, STYLE==='poster')+1)%BANNER_SHAPES.length;
+    applyBannerShape(cell, it); return; }
 
   // zoom buttons
   const zb=e.target.closest('.zoomctl button');
