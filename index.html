@@ -128,6 +128,15 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .pnum:empty::before{ content:'···'; color:rgba(255,255,255,.5); text-shadow:none; }
 .thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; outline:none; }
 .cell.is-set .thb{ display:none; }
+.price.second{ margin-top:2px; }
+/* price controls: size buttons + second-price toggle, and a drag grip on each tag */
+.pricectl{ position:absolute; z-index:6; bottom:8px; right:8px; display:flex; align-items:center; gap:4px;
+  background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
+.pricectl button{ width:22px; height:22px; border:none; border-radius:50%; background:rgba(255,255,255,.92);
+  color:#15110b; font-family:Oswald; font-weight:700; font-size:10px; cursor:pointer; line-height:1; }
+.pricectl button:active{ transform:translateY(1px); }
+.pgrip{ width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; font-size:11px;
+  display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; align-self:center; }
 
 /* SET stamp */
 .setstamp{ display:none; position:absolute; z-index:4; top:54px; right:12%;
@@ -177,7 +186,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text, <b>▭− / ▭+</b> to resize the white banner behind it, and <b>◇</b> to change its shape (blob / brush / ribbon / oval). <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text, <b>▭− / ▭+</b> to resize the white banner behind it, and <b>◇</b> to change its shape (blob / brush / ribbon / oval). <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Use <b>P− / P+</b> to resize the price, drag its <b>≡</b> grip to move it, and <b>+2</b> to add a second price for products with two options. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
 </div>
 
 <div id="boards"></div>
@@ -530,6 +539,17 @@ function applyCellTitle(cell, sec, idx){
   if(n) n.style.fontSize=(b.name*ts)+'px';
   if(s) s.style.fontSize=(b.sub*ts)+'px';
 }
+// apply a cell's price size live (both tags share the same scale)
+function applyPriceSize(cell, sec, idx){
+  const it=sec.items[idx]; if(!it) return;
+  const w=cellWidth(sec,it);
+  const base=Math.max(24, Math.min(46, w*0.115))*(it.ps||1);
+  cell.querySelectorAll('.price').forEach(pr=>{
+    const num=pr.querySelector('.pnum'), th=pr.querySelector('.thb');
+    if(num) num.style.fontSize=base+'px';
+    if(th) th.style.fontSize=Math.max(11, Math.round(base*0.4))+'px';
+  });
+}
 function applyBannerColor(cell, it){
   const banner=cell.querySelector('.banner'); if(!banner) return;
   const path=banner.querySelector('.blobbg path');
@@ -581,8 +601,18 @@ function makeCell(item, idx, w){
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = bannerPad(item, poster);
-  const thbSize = Math.max(11, Math.round(priceSize*0.4));
+  const psize = priceSize*(item.ps||1);
+  const thbSize = Math.max(11, Math.round(psize*0.4));
   const cur = (item.thb!==undefined ? item.thb : 'THB');
+  const cur2 = (item.thb2!==undefined ? item.thb2 : cur);
+  const priceTag=(n,val,curv,x,y)=>`
+    <div class="price${n===2?' second':''}" data-p="${n}" style="transform:translate(${x||0}px,${y||0}px)">
+      <span class="pgrip no-print" title="drag price">≡</span>
+      <span class="pnum" contenteditable style="font-size:${psize}px">${val}</span>
+      <span class="thb" contenteditable style="font-size:${thbSize}px">${curv}</span>
+    </div>`;
+  const prices = priceTag(1,item.p,cur,item.px,item.py)
+    + (item.p2!==undefined ? priceTag(2,item.p2,cur2,item.p2x,item.p2y) : '');
   const squig = poster ? `<div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>` : '';
   c.innerHTML = `
     <button class="del no-print" title="remove">×</button>
@@ -604,10 +634,12 @@ function makeCell(item, idx, w){
     <div class="photo" data-empty="${item.img?'0':'1'}">
       ${photoInner}
     </div>
-    <div class="price">
-      <span class="pnum" contenteditable style="font-size:${priceSize}px">${item.p}</span>
-      <span class="thb" contenteditable style="font-size:${thbSize}px">${cur}</span>
+    <div class="pricectl no-print">
+      <button data-ps="-1" title="smaller price">P−</button>
+      <button data-ps="1" title="bigger price">P+</button>
+      <button data-p2 title="${item.p2!==undefined?'remove second price':'add second price (two options)'}">${item.p2!==undefined?'−2':'+2'}</button>
     </div>
+    ${prices}
     ${squig}`;
   return c;
 }
@@ -646,9 +678,13 @@ function syncBoard(si){  // read live DOM edits back into the model
     if(!sec.items[idx]) return;
     sec.items[idx].n=c.querySelector('.name').textContent.trim();
     sec.items[idx].s=c.querySelector('.sub').textContent.trim();
-    sec.items[idx].p=c.querySelector('.pnum').textContent.trim();
-    const thbEl=c.querySelector('.thb');
-    if(thbEl) sec.items[idx].thb=thbEl.textContent.trim();
+    const prices=c.querySelectorAll('.price');
+    sec.items[idx].p=prices[0].querySelector('.pnum').textContent.trim();
+    sec.items[idx].thb=prices[0].querySelector('.thb').textContent.trim();
+    if(prices[1]){
+      sec.items[idx].p2=prices[1].querySelector('.pnum').textContent.trim();
+      sec.items[idx].thb2=prices[1].querySelector('.thb').textContent.trim();
+    }
     const img=c.querySelector('.photo img');
     sec.items[idx].img= img? img.src : null;
     if(!img){ sec.items[idx].z=1; sec.items[idx].x=0; sec.items[idx].y=0; }
@@ -744,6 +780,21 @@ boardsEl.addEventListener('click',e=>{
     it.shape=(shapeIdxFor(it, STYLE==='poster')+1)%BANNER_SHAPES.length;
     applyBannerShape(cell, it); return; }
 
+  // per-product price size (live, no re-render)
+  const pb=e.target.closest('.pricectl button[data-ps]');
+  if(pb){ const cell=pb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
+    const it=SECTIONS[si].items[idx]; it.ps=Math.min(2.2, Math.max(0.5, +(((it.ps||1)+(+pb.dataset.ps)*0.1)).toFixed(2)));
+    applyPriceSize(cell, SECTIONS[si], idx); return; }
+
+  // toggle a second price tag (for products with two options at different prices)
+  const p2b=e.target.closest('.pricectl button[data-p2]');
+  if(p2b){ const cell=p2b.closest('.cell'); const si=+cell.closest('.board').dataset.sec;
+    syncBoard(si);
+    const it=SECTIONS[si].items[+cell.dataset.idx];
+    if(it.p2===undefined){ it.p2=''; }
+    else { delete it.p2; delete it.thb2; delete it.p2x; delete it.p2y; }
+    renderBoard(si); return; }
+
   // zoom buttons
   const zb=e.target.closest('.zoomctl button');
   if(zb){ e.stopPropagation();
@@ -771,9 +822,18 @@ boardsEl.addEventListener('wheel',e=>{
   applyZoom(photo);
 },{passive:false});
 
-// drag to pan a filled photo
-let pan=null;
+// drag to pan a filled photo; drag a price tag by its ≡ grip
+let pan=null, pdrag=null;
 boardsEl.addEventListener('pointerdown',e=>{
+  const grip=e.target.closest('.pgrip');
+  if(grip){
+    const priceEl=grip.closest('.price'); const it=itemOf(priceEl); if(!it) return;
+    const second=priceEl.dataset.p==='2';
+    const kx=second?'p2x':'px', ky=second?'p2y':'py';
+    pdrag={priceEl,it,kx,ky,sx:e.clientX,sy:e.clientY,ox:it[kx]||0,oy:it[ky]||0};
+    grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
+    e.preventDefault(); return;
+  }
   const photo=e.target.closest('.photo');
   if(!photo || photo.dataset.empty!=='0') return;
   if(e.target.closest('.zoomctl')) return;
@@ -784,12 +844,17 @@ boardsEl.addEventListener('pointerdown',e=>{
   e.preventDefault();
 });
 boardsEl.addEventListener('pointermove',e=>{
+  if(pdrag){
+    const nx=pdrag.ox+(e.clientX-pdrag.sx), ny=pdrag.oy+(e.clientY-pdrag.sy);
+    pdrag.it[pdrag.kx]=nx; pdrag.it[pdrag.ky]=ny;
+    pdrag.priceEl.style.transform=`translate(${nx}px,${ny}px)`; return;
+  }
   if(!pan) return;
   pan.it.x=pan.ox+(e.clientX-pan.sx);
   pan.it.y=pan.oy+(e.clientY-pan.sy);
   applyZoom(pan.photo);
 });
-function endPan(){ if(pan){ pan.photo.classList.remove('panning'); pan=null; } }
+function endPan(){ if(pan){ pan.photo.classList.remove('panning'); pan=null; } pdrag=null; }
 boardsEl.addEventListener('pointerup',endPan);
 boardsEl.addEventListener('pointercancel',endPan);
 
@@ -815,6 +880,7 @@ boardsEl.addEventListener('focusout',e=>{
   if(e.target.classList.contains('pnum')){
     const cell=e.target.closest('.cell');
     let t=e.target.textContent.trim();
+    if(e.target.closest('.price').dataset.p==='2'){ if(!t) e.target.innerHTML=''; return; }  // second tag: no SET stamp
     if(isSet(t)){ e.target.textContent='SET'; cell.classList.add('is-set'); }
     else { cell.classList.remove('is-set'); if(!t) e.target.innerHTML=''; }
   }
