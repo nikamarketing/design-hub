@@ -65,14 +65,15 @@ a{ color:inherit; }
   background-image:radial-gradient(rgba(255,255,255,.55) 1.3px, transparent 1.6px); background-size:13px 13px; }
 
 /* name brush banner */
-.banner{ position:relative; z-index:3; width:90%; min-height:40px; margin-top:2px; padding:5px 14px 7px;
+.banner{ position:relative; z-index:3; width:auto; max-width:96%; min-height:40px; margin-top:2px; padding:6px 72px 9px;
   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
   transform:rotate(-1deg);
-  background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20320%2096'%20preserveAspectRatio='none'%3E%3Cpath%20d='M10%2021%20C70%206%20142%209%20176%2013%20C232%206%20300%209%20312%2023%20C319%2046%20312%2067%20303%2079%20C242%2091%20150%2084%20120%2082%20C70%2087%2018%2084%2012%2074%20C3%2053%203%2034%2010%2021%20Z'%20fill='%23fdfaf3'/%3E%3C/svg%3E") center/100% 100% no-repeat;
-  background-color:#fdfaf3; border-radius:32px;
   filter:drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
-.name{ font-family:Anton; color:#E8730C; text-transform:uppercase; line-height:.92; letter-spacing:.3px; outline:none; }
-.sub{ font-family:Caveat; font-weight:700; color:#5a3a14; margin-top:1px; line-height:1; outline:none; }
+.banner .blobbg{ position:absolute; inset:0; width:100%; height:100%; z-index:-1; display:block; }
+.name{ font-family:Anton; color:#E8730C; text-transform:uppercase; line-height:.92; letter-spacing:.3px; outline:none;
+  position:relative; z-index:1; white-space:nowrap; max-width:100%; }
+.sub{ font-family:Caveat; font-weight:700; color:#5a3a14; margin-top:1px; line-height:1; outline:none;
+  position:relative; z-index:1; white-space:nowrap; max-width:100%; }
 
 /* photo */
 .photo{ position:relative; z-index:2; flex:1; width:100%; margin:1px 0; min-height:0;
@@ -106,7 +107,7 @@ body[data-style="3d"] .pnum{ text-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 0 rgba(0,
 body[data-style="3d"] .name{ text-shadow:0 2px 0 rgba(0,0,0,.16),0 4px 5px rgba(0,0,0,.22); }
 body[data-style="3d"] .banner{ filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
 body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)); }
-.banner.brush{ width:94%; padding:7px 20px 9px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.4)); }
+.banner.brush{ width:auto; padding:8px 78px 10px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.4)); }
 /* per-product title controls (size + banner colour) */
 .titlectl{ position:absolute; z-index:6; top:7px; left:8px; display:flex; align-items:center; gap:4px;
   background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
@@ -125,7 +126,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .pnum{ font-family:Anton; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.30); outline:none; white-space:nowrap;
   min-width:22px; text-align:center; }
 .pnum:empty::before{ content:'···'; color:rgba(255,255,255,.5); text-shadow:none; }
-.thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; }
+.thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; outline:none; }
 .cell.is-set .thb{ display:none; }
 
 /* SET stamp */
@@ -163,6 +164,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
     <option value="straight">Straight</option>
     <option value="horizontal">Horizontal</option>
     <option value="poster">Poster (Festive)</option>
+    <option value="billboard">Billboard (Gradient)</option>
     <option value="3d">3D Effect</option>
     <option value="istanbul">Istanbul Theme</option>
   </select>
@@ -175,7 +177,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit. <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price). Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text and <b>▭− / ▭+</b> to resize the white banner behind it. <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
 </div>
 
 <div id="boards"></div>
@@ -288,6 +290,13 @@ const SQUIGGLE='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.
 const BLOB_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${color}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`);
 const BRUSH_SVG=color=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${color}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`);
 function bannerImg(color){ return (STYLE==='poster'?BRUSH_SVG:BLOB_SVG)(color||'#fdfaf3'); }
+// inline SVG blob layer — stretches reliably (also in html2canvas export) and lets the banner shrink-wrap the text
+function blobSvg(color, poster){
+  const c=color||'#fdfaf3';
+  return poster
+    ? `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 92" preserveAspectRatio="none"><path fill="${c}" d="M12 20 Q28 9 52 14 Q80 8 110 13 Q150 7 190 12 Q230 8 270 12 Q300 9 322 16 Q334 22 330 36 Q336 52 328 66 Q332 79 312 80 Q280 86 250 79 Q210 85 170 80 Q130 86 95 80 Q60 85 30 78 Q10 74 12 58 Q6 44 12 34 Q8 26 12 20 Z"/></svg>`
+    : `<svg class="blobbg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" preserveAspectRatio="none"><path fill="${c}" d="M10 21 C70 6 142 9 176 13 C232 6 300 9 312 23 C319 46 312 67 303 79 C242 91 150 84 120 82 C70 87 18 84 12 74 C3 53 3 34 10 21 Z"/></svg>`;
+}
 function decorFor(idx){ return DECOR[idx % DECOR.length]; }
 
 function drawBg(canvas, si){
@@ -296,10 +305,14 @@ function drawBg(canvas, si){
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
+  const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
+
+  // ---------- Billboard: one glossy gradient flowing across the whole board ----------
+  if(STYLE==='billboard'){ drawBillboard(ctx, W, H, xs, solidCol, si); return; }
+
   // slant = diagonal seam offset; gap = black separator between tiles (horizontal & 3d styles)
   const slant=(STYLE==='straight'||STYLE==='3d')?0:20;
   const gap  =(STYLE==='horizontal')?13:(STYLE==='3d'?14:0);
-  const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
   const rnd=rng(si*131+9);
   for(let i=0;i<n;i++){
     const cw=xs[i+1]-xs[i];
@@ -375,6 +388,47 @@ function drawBg(canvas, si){
     if(i<n-1 && gap===0){ ctx.save(); ctx.strokeStyle='rgba(0,0,0,0.32)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tR,0); ctx.lineTo(bR,H); ctx.stroke(); ctx.restore(); }
   }
   if(STYLE==='istanbul') drawSkyline(ctx, W, H, si);
+}
+function drawBillboard(ctx, W, H, xs, solidCol, si){
+  const n=xs.length-1, rnd=rng(si*197+31);
+  // continuous diagonal colour flow across the ENTIRE board (no per-panel seams)
+  const stops = SOLID_BG
+    ? [shade(solidCol,-.30), shade(solidCol,-.05), shade(solidCol,.20), shade(solidCol,-.05), shade(solidCol,-.30)]
+    : ['#6f0d0d','#b41f1f','#e8730c','#f9ba2c','#e8730c','#b41f1f','#6f0d0d'];
+  const g=ctx.createLinearGradient(0,0,W,H);
+  stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1), c));
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // warm radial glow centred on the board — makes the middle pop like backlit signage
+  const glow=ctx.createRadialGradient(W*0.5,H*0.42, Math.min(W,H)*0.05, W*0.5,H*0.5, Math.max(W,H)*0.6);
+  glow.addColorStop(0,'rgba(255,238,190,0.28)'); glow.addColorStop(.5,'rgba(255,180,80,0.08)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+
+  // glossy top sheen (premium print/acrylic finish)
+  const sheen=ctx.createLinearGradient(0,0,0,H);
+  sheen.addColorStop(0,'rgba(255,255,255,0.26)'); sheen.addColorStop(.16,'rgba(255,255,255,0.06)');
+  sheen.addColorStop(.42,'rgba(255,255,255,0)'); sheen.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sheen; ctx.fillRect(0,0,W,H);
+
+  // fine halftone dots for print texture
+  ctx.globalAlpha=0.07; ctx.fillStyle='#ffffff';
+  for(let y=6,row=0;y<H;y+=15,row++){ for(let x=0;x<W;x+=15){ ctx.beginPath(); ctx.arc(x+(row%2?7:0),y,1.4,0,6.283); ctx.fill(); } }
+  ctx.globalAlpha=1;
+  // speckle grain
+  ctx.fillStyle='rgba(255,255,255,0.045)';
+  for(let sp=0;sp<40*n;sp++){ ctx.fillRect(rnd()*W, rnd()*H, 2,2); }
+
+  // thin luminous seams instead of hard black dividers
+  for(let i=1;i<n;i++){ const x=xs[i];
+    const seam=ctx.createLinearGradient(0,0,0,H);
+    seam.addColorStop(0,'rgba(255,255,255,0.28)'); seam.addColorStop(.5,'rgba(255,255,255,0.10)'); seam.addColorStop(1,'rgba(255,255,255,0.28)');
+    ctx.fillStyle=seam; ctx.fillRect(x-0.75,0,1.5,H);
+    ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(x+0.75,0,1,H);
+  }
+  // soft edge vignette top & bottom for depth
+  const vg=ctx.createLinearGradient(0,0,0,H);
+  vg.addColorStop(0,'rgba(0,0,0,0.20)'); vg.addColorStop(.35,'rgba(0,0,0,0)'); vg.addColorStop(.72,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.28)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 }
 
 /* Istanbul skyline silhouette across the whole board: row houses, Galata Tower,
@@ -466,8 +520,21 @@ function applyCellTitle(cell, sec, idx){
 }
 function applyBannerColor(cell, it){
   const banner=cell.querySelector('.banner'); if(!banner) return;
-  banner.style.backgroundImage=`url('${bannerImg(it.bc||'#fdfaf3')}')`;
-  banner.style.backgroundColor='transparent';
+  const path=banner.querySelector('.blobbg path');
+  if(path) path.setAttribute('fill', it.bc||'#fdfaf3');
+}
+// banner (white background) size — independent from title text size, driven by padding
+function bannerPad(it, poster){
+  const bs=it.bs||1;
+  const padX=(poster?78:72)*bs, padT=(poster?8:6)*bs, padB=(poster?10:9)*bs;
+  return `padding:${padT.toFixed(1)}px ${padX.toFixed(1)}px ${padB.toFixed(1)}px`;
+}
+function applyBannerSize(cell, it, poster){
+  const banner=cell.querySelector('.banner'); if(!banner) return;
+  const bs=it.bs||1;
+  banner.style.paddingLeft=banner.style.paddingRight=((poster?78:72)*bs).toFixed(1)+'px';
+  banner.style.paddingTop=((poster?8:6)*bs).toFixed(1)+'px';
+  banner.style.paddingBottom=((poster?10:9)*bs).toFixed(1)+'px';
 }
 
 // image transform helpers -----------------------------------------------
@@ -500,8 +567,9 @@ function makeCell(item, idx, w){
     : (STYLE==='istanbul' ? `<div class="decor ist" style="background-image:url('${istDecorFor(idx)}')"></div>` : '');
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
-  const bannerStyle = `background-image:url('${bannerImg(bcol)}');background-color:transparent;${poster?'border-radius:4px;':''}`;
+  const bannerStyle = bannerPad(item, poster);
   const thbSize = Math.max(11, Math.round(priceSize*0.4));
+  const cur = (item.thb!==undefined ? item.thb : 'THB');
   const squig = poster ? `<div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>` : '';
   c.innerHTML = `
     <button class="del no-print" title="remove">×</button>
@@ -509,10 +577,13 @@ function makeCell(item, idx, w){
     <div class="titlectl no-print">
       <button data-ts="-1" title="smaller title">A−</button>
       <button data-ts="1" title="bigger title">A+</button>
+      <button data-bs="-1" title="smaller background">▭−</button>
+      <button data-bs="1" title="bigger background">▭+</button>
       <input type="color" class="bcol" value="${bcol}" title="title background colour">
     </div>
     ${decor}
     <div class="${bannerCls}" style="${bannerStyle}">
+      ${blobSvg(bcol, poster)}
       <span class="name" contenteditable style="font-size:${nameSize}px">${item.n}</span>
       <span class="sub" contenteditable style="font-size:${subSize}px">${item.s}</span>
     </div>
@@ -521,7 +592,7 @@ function makeCell(item, idx, w){
     </div>
     <div class="price">
       <span class="pnum" contenteditable style="font-size:${priceSize}px">${item.p}</span>
-      <span class="thb" style="font-size:${thbSize}px">THB</span>
+      <span class="thb" contenteditable style="font-size:${thbSize}px">${cur}</span>
     </div>
     ${squig}`;
   return c;
@@ -562,6 +633,8 @@ function syncBoard(si){  // read live DOM edits back into the model
     sec.items[idx].n=c.querySelector('.name').textContent.trim();
     sec.items[idx].s=c.querySelector('.sub').textContent.trim();
     sec.items[idx].p=c.querySelector('.pnum').textContent.trim();
+    const thbEl=c.querySelector('.thb');
+    if(thbEl) sec.items[idx].thb=thbEl.textContent.trim();
     const img=c.querySelector('.photo img');
     sec.items[idx].img= img? img.src : null;
     if(!img){ sec.items[idx].z=1; sec.items[idx].x=0; sec.items[idx].y=0; }
@@ -580,6 +653,7 @@ function buildAll(){
         <span class="bspacer"></span>
         <label class="chk" title="set this whole board to one colour">Board colour <input type="color" class="seccolor" data-sec="${si}" value="${sec.bg||'#a01818'}"></label>
         <button class="btn ghost" onclick="downloadPNG(${si})">Download PNG</button>
+        <button class="btn ghost" onclick="downloadSectionPDF(${si})">Download PDF</button>
       </div>
       <div class="scroll"><div class="board" data-sec="${si}"></div></div>`;
     boardsEl.appendChild(wrap);
@@ -638,10 +712,16 @@ boardsEl.addEventListener('click',e=>{
     renderBoard(si); updateHead(si); return; }
 
   // per-product title size (live, no re-render)
-  const tb=e.target.closest('.titlectl button');
+  const tb=e.target.closest('.titlectl button[data-ts]');
   if(tb){ const cell=tb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
     const it=SECTIONS[si].items[idx]; it.ts=Math.min(2.2, Math.max(0.5, +(((it.ts||1)+(+tb.dataset.ts)*0.1)).toFixed(2)));
     applyCellTitle(cell, SECTIONS[si], idx); return; }
+
+  // per-product banner (white background) size (live, no re-render)
+  const bb=e.target.closest('.titlectl button[data-bs]');
+  if(bb){ const cell=bb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
+    const it=SECTIONS[si].items[idx]; it.bs=Math.min(2.5, Math.max(0.4, +(((it.bs||1)+(+bb.dataset.bs)*0.12)).toFixed(2)));
+    applyBannerSize(cell, it, STYLE==='poster'); return; }
 
   // zoom buttons
   const zb=e.target.closest('.zoomctl button');
@@ -776,6 +856,18 @@ async function downloadPNG(si){
   const nm=SECTIONS[si].name.toLowerCase().replace(/\s+/g,'-');
   dl(new Blob([tagged],{type:'image/png'}), `palace-${nm}-${wcm}x${hcm}cm-${effDpi}dpi.png`);
   return {board:SECTIONS[si].name, px:canvas.width+'×'+canvas.height, effDpi};
+}
+async function downloadSectionPDF(si){
+  const { jsPDF }=window.jspdf; const dpi=exportDPI();
+  const board=document.querySelector(`.board[data-sec="${si}"]`);
+  const {wcm,hcm}=boardCm(si);
+  const canvas=await snap(board, exportScale(board, si, dpi));
+  const img=canvas.toDataURL('image/jpeg',0.95);
+  const wmm=Math.round(wcm*10), hmm=Math.round(hcm*10), orient=wmm>=hmm?'l':'p';
+  const pdf=new jsPDF({orientation:orient, unit:'mm', format:[wmm,hmm]});
+  pdf.addImage(img,'JPEG',0,0,wmm,hmm,undefined,'FAST');
+  const nm=SECTIONS[si].name.toLowerCase().replace(/\s+/g,'-');
+  pdf.save(`palace-${nm}-${wcm}x${hcm}cm.pdf`);
 }
 async function exportAllPNG(){
   const rows=[];
