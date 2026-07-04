@@ -128,6 +128,29 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .pnum:empty::before{ content:'···'; color:rgba(255,255,255,.5); text-shadow:none; }
 .thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; outline:none; }
 .cell.is-set .thb{ display:none; }
+.price.second{ margin-top:2px; }
+/* price controls: size buttons + second-price toggle, and a drag grip on each tag */
+.pricectl{ position:absolute; z-index:6; bottom:8px; right:8px; display:flex; align-items:center; gap:4px;
+  background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
+.pricectl button{ width:22px; height:22px; border:none; border-radius:50%; background:rgba(255,255,255,.92);
+  color:#15110b; font-family:Oswald; font-weight:700; font-size:10px; cursor:pointer; line-height:1; }
+.pricectl button:active{ transform:translateY(1px); }
+.pgrip{ width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; font-size:11px;
+  display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; align-self:center; }
+
+/* Cam (Window) fire panel: "Authentic Istanbul" corner stamp */
+.authstamp{ position:absolute; z-index:4; right:14px; top:14px; width:88px; height:88px; border-radius:50%;
+  border:2.5px dashed #F4B400; color:#F4B400; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-family:Oswald; font-weight:700; font-size:11px; letter-spacing:1.6px; text-transform:uppercase;
+  transform:rotate(-12deg); background:rgba(0,0,0,.35); text-align:center; line-height:1.35; }
+.authstamp span{ color:#C41E3A; font-size:13px; line-height:1; }
+
+/* Cam Kapı Üstü art banner: brand name on a crimson sash over the mural */
+.brandsash{ position:absolute; z-index:5; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-1.2deg); }
+.brandsash svg{ position:absolute; inset:0; width:100%; height:100%; z-index:-1;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.brandsash .sashtext{ display:block; text-align:center; font-family:Anton; color:#F4B400; letter-spacing:3px;
+  padding:26px 64px 30px; font-size:54px; outline:none; white-space:nowrap; }
 
 /* SET stamp */
 .setstamp{ display:none; position:absolute; z-index:4; top:54px; right:12%;
@@ -177,7 +200,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
   <input id="dpiInp" type="number" value="300" min="72" max="600" step="50" title="export resolution">
   <button class="btn" onclick="exportPDF()">Export PDF</button>
   <button class="btn alt" onclick="exportAllPNG()">Export all PNG</button>
-  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text, <b>▭− / ▭+</b> to resize the white banner behind it, and <b>◇</b> to change its shape (blob / brush / ribbon / oval). <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
+  <div class="hint">Click any empty photo box to <b>add your dish image</b> (or drag a file onto it). Once added, <b>scroll to zoom</b>, <b>drag to reposition</b>, or use the <b>+ / − / ⟳</b> buttons. Click any <b>name or description</b> to edit; use <b>A− / A+</b> to resize the title text, <b>▭− / ▭+</b> to resize the white banner behind it, and <b>◇</b> to change its shape (blob / brush / ribbon / oval). <b>Prices start empty</b> — click the <b>···</b> beside THB and type the number (boxes left empty export with no price); the <b>THB</b> label itself is editable too. Use <b>P− / P+</b> to resize the price, drag its <b>≡</b> grip to move it, and <b>+2</b> to add a second price for products with two options. Type <b>SET</b> as a price for a SET stamp. Use the <b>½</b> button (top-right of a box) to <b>split that box into two</b> half-width boxes; <b>×</b> removes one again. Exports render at the <b>DPI</b> shown (default 300) at the board's <b>exact cm size</b> — print-ready.</div>
 </div>
 
 <div id="boards"></div>
@@ -186,36 +209,44 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 const TONES = ["tone-red","tone-orange","tone-yellow"];
 const SECTIONS = [
  {name:"Sol Master", dim:"440 x 35 cm", items:[
-   {n:"ISKENDER KEBAB", s:"Tomato sauce & yogurt", p:""},
-   {n:"TURKISH PIDE", s:"Boat-shaped Turkish pizza", p:""},
-   {n:"LAHMACUN", s:"Spiced Turkish flatbread", p:""},
-   {n:"MIX DONER PLATE", s:"Chicken & lamb + rice", p:""},
+   {n:"ISKENDER KEBAB", s:"Sliced doner, tomato sauce & yogurt", p:""},
    {n:"ADANA KEBAB", s:"Spicy minced lamb skewer", p:""},
-   {n:"URFA KEBAB", s:"Mild minced lamb skewer", p:""},
-   {n:"KOFTE PLATE", s:"Grilled meatballs + rice", p:""},
-   {n:"MIXED GRILL", s:"Chef's meat selection", p:""},
+   {n:"PIDE VARIETIES", s:"Boat-shaped Turkish pide", p:""},
+   {n:"LAHMACUN", s:"Thin crispy Turkish flatbread", p:""},
+   {n:"KELLE PACA SOUP", s:"Traditional Turkish soup", p:""},
+   {n:"PALACE MIX GRILL", s:"Chef's selection from the grill", p:""},
+   {n:"PALACE KOFTE", s:"Grilled Turkish meatballs", p:""},
+   {n:"CHICKEN SHISH", s:"Marinated chicken skewer", p:""},
  ]},
  {name:"Middle", dim:"137.5 x 35 cm", items:[
-   {n:"DONER DURUM", s:"Chicken or lamb wrap", p:""},
-   {n:"CHICKEN ROLL", s:"Tavuk durum", p:""},
-   {n:"LAMB ROLL", s:"Kuzu durum", p:""},
+   {n:"MEAT DURUM", s:"Beef & lamb wrap", p:""},
+   {n:"CHICKEN DURUM", s:"Chicken wrap", p:""},
+   {n:"SET MENU", s:"Chicken or meat set", p:"", p2:""},
  ]},
  {name:"Right 2", dim:"282 x 35 cm", items:[
-   {n:"FRENCH FRIES", s:"Patates kizartmasi", p:""},
+   {n:"FALAFEL PITA", s:"Fresh falafel with salad", p:""},
    {n:"HUMMUS", s:"Chickpea dip", p:""},
-   {n:"CACIK", s:"Yogurt & cucumber", p:""},
-   {n:"BUTTER RICE", s:"Pilav", p:""},
-   {n:"SOFT DRINKS", s:"Cola, Ayran, Water", p:""},
+   {n:"MEAT & CHICKEN PITA", s:"Lamb or chicken pita", p:"", p2:""},
+   {n:"MANTI", s:"Turkish dumplings with yogurt", p:""},
+   {n:"KAVURMA PIDE", s:"Pide with roasted meat", p:""},
  ]},
  {name:"Right 1", dim:"460 x 35 cm", items:[
-   {n:"ROLL SET", s:"Chicken or Lamb wrap", p:""},
-   {n:"FALAFEL PITA", s:"Fresh falafel with salad", p:""},
-   {n:"CHICKEN PITA", s:"Grilled chicken pita", p:""},
-   {n:"LAMB PITA", s:"Tender lamb pita", p:""},
-   {n:"LAMB KEBAB PLATE", s:"Sliced lamb with rice", p:""},
-   {n:"PIZZA TURKO MARGARITA", s:"Stone-baked pizza", p:""},
-   {n:"LENTIL SOUP", s:"Traditional lentil soup", p:""},
-   {n:"SPECIAL KEBAB", s:"Chef's Special", p:""},
+   {n:"LENTIL SOUP", s:"Mercimek corbasi", p:""},
+   {n:"PIZZA MARGHERITA", s:"Stone-baked pizza", p:""},
+   {n:"RED MEAT LOVERS", s:"Pizza loaded with meat", p:""},
+   {n:"LAMB CHOPS", s:"Kuzu pirzola", p:""},
+   {n:"BAKLAVA", s:"Carrot-slice with ice cream & dark baklava", p:""},
+   {n:"SOFT DRINKS", s:"Ayran, salgam & soft drinks", p:""},
+   {n:"MIX MEZE", s:"Assorted Turkish starters", p:""},
+   {n:"FISH & CHIPS", s:"Crispy battered fish", p:""},
+ ]},
+ // Cam (Window): a mood piece, not a price list — stone-oven fire background, one oversized flatbread
+ {name:"Cam (Window)", dim:"97 x 95 cm", fire:true, items:[
+   {n:"PIDE & LAHMACUN", s:"Taş fırından — from the stone oven", p:""},
+ ]},
+ // Cam Kapı Üstü: hand-drawn Istanbul mural banner with the brand sash (no menu boxes)
+ {name:"Cam Kapı Üstü", dim:"385 x 45 cm", art:true, brand:"PALACE ISTANBUL KEBAB", items:[
+   {n:"", s:"", p:""},
  ]},
 ];
 
@@ -317,6 +348,10 @@ function drawBg(canvas, si){
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H); ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,W,H);
+
+  // fire and art sections keep their own backgrounds whatever the global panel style is
+  if(sec.fire){ drawOvenFire(ctx, W, H, si); return; }
+  if(sec.art){ drawIstanbulArt(ctx, W, H, si); return; }
   const solidCol=SECTIONS[si].bg || BG_COLOR;   // per-section colour, falls back to global
 
   // ---------- Billboard: one glossy gradient flowing across the whole board ----------
@@ -443,6 +478,282 @@ function drawBillboard(ctx, W, H, xs, solidCol, si){
   ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
 }
 
+/* Cam (Window) panel: inside of a stone oven — glowing brick lining, ember bed,
+   layered flame tongues and sparks, framed by a dark oven-mouth vignette */
+function drawOvenFire(ctx, W, H, si){
+  const rnd=rng(si*613+77);
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#140805'); bg.addColorStop(.5,'#26100a'); bg.addColorStop(1,'#301006');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // brick lining — bricks glow warmer the closer they are to the fire heart
+  const bh=30, bw=52, gap=3;
+  for(let r=0, y=0; y<H; r++, y+=bh+gap){
+    for(let x=(r%2)?-bw/2:0; x<W; x+=bw+gap){
+      const d=Math.hypot(x+bw/2-W/2, y+bh/2-H*0.9)/(H*0.95);
+      const heat=Math.max(0, 1-d)*0.9 + rnd()*0.08;
+      ctx.fillStyle=`rgb(${(46+heat*170)|0},${(24+heat*80)|0},${(16+heat*20)|0})`;
+      ctx.fillRect(x, y, bw, bh);
+      ctx.fillStyle=`rgba(255,200,120,${(0.05+heat*0.10).toFixed(2)})`;   // catch-light on brick tops
+      ctx.fillRect(x, y, bw, 3);
+    }
+  }
+
+  // firelight wash
+  ctx.globalCompositeOperation='lighter';
+  const glow=ctx.createRadialGradient(W/2, H*0.92, 10, W/2, H*0.92, H*0.85);
+  glow.addColorStop(0,'rgba(255,140,30,0.55)'); glow.addColorStop(.45,'rgba(210,70,10,0.22)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation='source-over';
+
+  // ember bed
+  ctx.fillStyle='#1c0803';
+  ctx.beginPath(); ctx.ellipse(W/2, H+6, W*0.62, H*0.10, 0, 0, 6.283); ctx.fill();
+  for(let i=0;i<70;i++){
+    const heat=rnd();
+    ctx.fillStyle=heat>0.75?'#ffd54f':(heat>0.4?'#ff7a1a':'#c62808');
+    ctx.globalAlpha=0.5+heat*0.5;
+    ctx.beginPath(); ctx.arc(W*0.5+(rnd()-0.5)*W*0.95, H-2-rnd()*H*0.07, 1+rnd()*2.6, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // flames: layered tongues, hottest core in the middle
+  ctx.globalCompositeOperation='lighter';
+  const tongues=7+Math.floor(rnd()*3);
+  for(let i=0;i<tongues;i++){
+    const fx=W*(0.14+0.72*i/(tongues-1))+(rnd()-0.5)*14;
+    const fh=H*(0.30+rnd()*0.34)*(1-Math.abs(fx-W/2)/W*0.9);
+    const fw=18+rnd()*26;
+    flameTongue(ctx, fx, H, fh,      fw,      'rgba(183,28,12,0.85)');
+    flameTongue(ctx, fx, H, fh*0.76, fw*0.70, 'rgba(239,108,0,0.90)');
+    flameTongue(ctx, fx, H, fh*0.52, fw*0.46, 'rgba(255,193,7,0.90)');
+    flameTongue(ctx, fx, H, fh*0.28, fw*0.24, 'rgba(255,244,214,0.95)');
+  }
+  // sparks drifting up
+  for(let i=0;i<26;i++){
+    ctx.fillStyle=`rgba(255,${180+(rnd()*70|0)},80,${(0.35+rnd()*0.6).toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(W*0.5+(rnd()-0.5)*W*0.7, H-rnd()*H*0.72, 0.8+rnd()*1.4, 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+
+  // oven-mouth vignette
+  const vg=ctx.createRadialGradient(W/2,H*0.62,Math.min(W,H)*0.34, W/2,H*0.62,Math.max(W,H)*0.78);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(.72,'rgba(0,0,0,0.18)'); vg.addColorStop(1,'rgba(0,0,0,0.66)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+}
+function flameTongue(ctx, x, base, h, w2, color){
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(x-w2/2, base);
+  ctx.bezierCurveTo(x-w2/2, base-h*0.34, x-w2*0.30, base-h*0.60, x, base-h);
+  ctx.bezierCurveTo(x+w2*0.30, base-h*0.60, x+w2/2, base-h*0.34, x+w2/2, base);
+  ctx.closePath(); ctx.fill();
+}
+
+/* Cam Kapı Üstü banner: hand-drawn chalk mural of Istanbul life & food culture —
+   tram, Galata Tower, Bosphorus fishermen, ferry, döner chef, simit vendor, tea,
+   tulips, seagulls (deliberately no mosque figures) */
+function drawIstanbulArt(ctx, W, H, si){
+  const rnd=rng(si*389+17);
+  const ink='rgba(255,241,214,0.92)', gold='#F4B400', red='#C41E3A', orange='#E8730C';
+  const st=(w,c)=>{ ctx.lineWidth=w; ctx.strokeStyle=c||ink; };
+  ctx.lineCap='round'; ctx.lineJoin='round';
+
+  // warm charcoal wall + grain
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#241511'); bg.addColorStop(1,'#150c08');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,235,200,0.045)';
+  for(let i=0;i<Math.round(W/6);i++) ctx.fillRect(rnd()*W, rnd()*H, 2, 2);
+
+  // Iznik-style diamond chain along the top
+  st(2, gold); ctx.globalAlpha=.7;
+  for(let x=40; x<W-30; x+=120){
+    ctx.beginPath(); ctx.moveTo(x,12); ctx.lineTo(x+9,20); ctx.lineTo(x,28); ctx.lineTo(x-9,20); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+34,20); ctx.lineTo(x+86,20); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  const G=H-24;   // common ground line
+  function waves(x0,x1,y){ st(2.5);
+    ctx.beginPath();
+    for(let x=x0;x<x1;x+=26){ ctx.moveTo(x,y); ctx.quadraticCurveTo(x+6.5,y-6,x+13,y); ctx.quadraticCurveTo(x+19.5,y+6,x+26,y); }
+    ctx.stroke(); }
+  function star(x,y,s){ st(2.2,gold);
+    ctx.beginPath(); ctx.moveTo(x-s,y); ctx.lineTo(x+s,y); ctx.moveTo(x,y-s); ctx.lineTo(x,y+s);
+    ctx.moveTo(x-s*.5,y-s*.5); ctx.lineTo(x+s*.5,y+s*.5); ctx.moveTo(x+s*.5,y-s*.5); ctx.lineTo(x-s*.5,y+s*.5); ctx.stroke(); }
+  function gull(x,y,s){ st(2.6);
+    ctx.beginPath(); ctx.moveTo(x-2*s,y); ctx.quadraticCurveTo(x-s,y-s*1.3,x,y);
+    ctx.quadraticCurveTo(x+s,y-s*1.3,x+2*s,y); ctx.stroke(); }
+  function tulip(x,base,s){
+    st(2.6); ctx.beginPath(); ctx.moveTo(x,base); ctx.quadraticCurveTo(x+s*.15,base-s*.5,x,base-s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,base-s*.45); ctx.quadraticCurveTo(x-s*.5,base-s*.55,x-s*.35,base-s*.15); ctx.stroke();
+    st(2.8,red); ctx.beginPath();
+    ctx.moveTo(x-s*.28,base-s); ctx.quadraticCurveTo(x-s*.34,base-s*1.4,x,base-s*1.32);
+    ctx.quadraticCurveTo(x+s*.34,base-s*1.4,x+s*.28,base-s);
+    ctx.quadraticCurveTo(x,base-s*.82,x-s*.28,base-s);
+    ctx.moveTo(x,base-s*1.3); ctx.lineTo(x,base-s*.98); ctx.stroke(); }
+  function figure(x,base,h){ // simple standing person, returns shoulder point
+    st(3);
+    ctx.beginPath(); ctx.arc(x,base-h,h*0.16,0,6.283); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,base-h+h*0.16); ctx.lineTo(x,base-h*0.38);
+    ctx.moveTo(x,base-h*0.38); ctx.lineTo(x-h*0.2,base); ctx.moveTo(x,base-h*0.38); ctx.lineTo(x+h*0.2,base);
+    ctx.stroke(); return {sx:x, sy:base-h*0.72}; }
+
+  // --- left: tulips + tram ---
+  tulip(W*0.030,G,54); tulip(W*0.048,G,70); tulip(W*0.066,G,50);
+  star(W*0.085,H*0.24,9);
+  (function tram(x,base,s){
+    const h=s*0.42;
+    st(3.4); ctx.strokeRect(x-s/2,base-h-16,s,h);
+    st(2.4);
+    const ww=s/4.8;
+    for(let i=-1;i<=1;i++) ctx.strokeRect(x+i*(ww+8)-ww/2, base-h-6, ww, h*0.44);
+    ctx.beginPath(); ctx.arc(x-s*0.26,base-8,9,0,6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x+s*0.26,base-8,9,0,6.283); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,base-h-16); ctx.lineTo(x+s*0.12,base-h-36); ctx.lineTo(x+s*0.3,base-h-36); ctx.stroke();
+    st(2.4,gold); ctx.beginPath(); ctx.arc(x-s/2+10,base-h+2,4,0,6.283); ctx.stroke();  // headlight
+  })(W*0.145,G,190);
+
+  // --- Galata Tower + old houses ---
+  (function galata(x,base,h){ const w=h*0.22;
+    st(3.4); ctx.beginPath();
+    ctx.moveTo(x-w/2,base); ctx.lineTo(x-w*0.42,base-h*0.62);
+    ctx.moveTo(x+w/2,base); ctx.lineTo(x+w*0.42,base-h*0.62);
+    ctx.moveTo(x-w*0.55,base-h*0.62); ctx.lineTo(x+w*0.55,base-h*0.62);
+    ctx.moveTo(x-w*0.55,base-h*0.74); ctx.lineTo(x+w*0.55,base-h*0.74);
+    ctx.moveTo(x-w*0.55,base-h*0.62); ctx.lineTo(x-w*0.55,base-h*0.74);
+    ctx.moveTo(x+w*0.55,base-h*0.62); ctx.lineTo(x+w*0.55,base-h*0.74);
+    ctx.moveTo(x-w*0.55,base-h*0.74); ctx.lineTo(x,base-h); ctx.lineTo(x+w*0.55,base-h*0.74);
+    ctx.moveTo(x-w/2,base); ctx.lineTo(x+w/2,base); ctx.stroke();
+    st(2.2);
+    for(let i=1;i<=3;i++){ ctx.beginPath(); ctx.arc(x,base-h*0.62*i/4,3,0,6.283); ctx.stroke(); }
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.arc(x+i*w*0.3,base-h*0.68,2.6,0,6.283); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(x,base-h); ctx.lineTo(x,base-h-16); ctx.stroke();
+    st(2.4,red); ctx.beginPath(); ctx.moveTo(x,base-h-16); ctx.lineTo(x+13,base-h-11); ctx.lineTo(x,base-h-6); ctx.closePath(); ctx.stroke();
+  })(W*0.225,G,235);
+  (function houses(x,base){ st(2.8);
+    let cx=x;
+    for(let i=0;i<3;i++){ const hw=34+rnd()*22, hh=30+rnd()*30;
+      ctx.strokeRect(cx,base-hh,hw,hh);
+      ctx.beginPath(); ctx.moveTo(cx-3,base-hh); ctx.lineTo(cx+hw/2,base-hh-13); ctx.lineTo(cx+hw+3,base-hh); ctx.stroke();
+      ctx.strokeRect(cx+hw*0.3,base-hh*0.62,hw*0.4,hh*0.3);
+      cx+=hw+8; }
+  })(W*0.255,G);
+  gull(W*0.20,H*0.16,8); gull(W*0.245,H*0.10,6);
+
+  // --- tea & pide (left of sash) ---
+  (function tea(x,base,s){
+    st(3); ctx.beginPath();
+    ctx.moveTo(x-s*0.3,base-s); ctx.bezierCurveTo(x-s*0.3,base-s*0.55,x-s*0.14,base-s*0.5,x-s*0.16,base-s*0.18);
+    ctx.moveTo(x+s*0.3,base-s); ctx.bezierCurveTo(x+s*0.3,base-s*0.55,x+s*0.14,base-s*0.5,x+s*0.16,base-s*0.18);
+    ctx.moveTo(x-s*0.16,base-s*0.18); ctx.lineTo(x+s*0.16,base-s*0.18);
+    ctx.moveTo(x-s*0.42,base); ctx.lineTo(x+s*0.42,base);
+    ctx.moveTo(x-s*0.34,base-s*0.08); ctx.lineTo(x+s*0.34,base-s*0.08); ctx.stroke();
+    st(2,gold); ctx.beginPath(); ctx.moveTo(x-s*0.28,base-s*0.78); ctx.lineTo(x+s*0.28,base-s*0.78); ctx.stroke();
+    st(2); ctx.beginPath();
+    ctx.moveTo(x-s*0.1,base-s*1.12); ctx.quadraticCurveTo(x-s*0.2,base-s*1.3,x-s*0.1,base-s*1.5);
+    ctx.moveTo(x+s*0.1,base-s*1.12); ctx.quadraticCurveTo(x,base-s*1.3,x+s*0.1,base-s*1.5); ctx.stroke();
+  })(W*0.315,G,105);
+  (function pide(x,y,s){
+    st(3); ctx.beginPath(); ctx.moveTo(x-s,y); ctx.quadraticCurveTo(x,y-s*0.42,x+s,y); ctx.quadraticCurveTo(x,y+s*0.42,x-s,y); ctx.stroke();
+    st(2); ctx.beginPath(); ctx.moveTo(x-s*0.68,y); ctx.quadraticCurveTo(x,y-s*0.24,x+s*0.68,y); ctx.quadraticCurveTo(x,y+s*0.24,x-s*0.68,y); ctx.stroke();
+    for(let i=-2;i<=2;i++){ ctx.beginPath(); ctx.moveTo(x+i*s*0.22-6,y-4); ctx.lineTo(x+i*s*0.22+6,y+4); ctx.stroke(); }
+  })(W*0.385,G-46,72);
+  star(W*0.36,H*0.2,8);
+
+  // --- centre backdrop: Bosphorus bridge with fishermen, ferry below ---
+  (function bridge(cx,span,deck){
+    const x0=cx-span/2, x1=cx+span/2, t1=x0+span*0.22, t2=x1-span*0.22, top=deck-H*0.42;
+    st(3.8); ctx.beginPath();
+    ctx.moveTo(x0,deck); ctx.lineTo(x1,deck);
+    ctx.moveTo(t1,deck+22); ctx.lineTo(t1,top); ctx.moveTo(t2,deck+22); ctx.lineTo(t2,top); ctx.stroke();
+    st(2.8); ctx.beginPath();
+    ctx.moveTo(t1,top); ctx.quadraticCurveTo(cx,deck-10,t2,top);
+    ctx.moveTo(t1,top); ctx.lineTo(x0,deck); ctx.moveTo(t2,top); ctx.lineTo(x1,deck); ctx.stroke();
+    st(1.8);
+    for(let hx=t1+30;hx<t2-16;hx+=36){ const t=(hx-t1)/(t2-t1);
+      const cy=(1-t)*(1-t)*top+2*t*(1-t)*(deck-10)+t*t*top;
+      ctx.beginPath(); ctx.moveTo(hx,cy); ctx.lineTo(hx,deck); ctx.stroke(); }
+    // fishermen leaning on the rail
+    [cx-span*0.30, cx-span*0.06, cx+span*0.24].forEach(fx=>{
+      const f=figure(fx,deck,34);
+      st(1.8); ctx.beginPath(); ctx.moveTo(f.sx,f.sy); ctx.lineTo(f.sx+20,f.sy-12);
+      ctx.moveTo(f.sx+20,f.sy-12); ctx.lineTo(f.sx+20,deck+30); ctx.stroke();
+    });
+    waves(x0+14,x1-14,deck+40);
+  })(W*0.5, W*0.30, H*0.62);
+  (function ferry(x,y,s){
+    st(3); ctx.beginPath();
+    ctx.moveTo(x-s,y); ctx.lineTo(x+s,y); ctx.lineTo(x+s*0.78,y+s*0.3); ctx.lineTo(x-s*0.78,y+s*0.3); ctx.closePath(); ctx.stroke();
+    ctx.strokeRect(x-s*0.62,y-s*0.3,s*1.24,s*0.3);
+    ctx.strokeRect(x-s*0.12,y-s*0.6,s*0.24,s*0.3);
+    st(2); ctx.beginPath(); ctx.moveTo(x,y-s*0.64); ctx.quadraticCurveTo(x+s*0.12,y-s*0.84,x,y-s*1.02); ctx.stroke();
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.arc(x+i*s*0.34,y-s*0.15,2.6,0,6.283); ctx.stroke(); }
+  })(W*0.435,H*0.80,64);
+  gull(W*0.47,H*0.14,9); gull(W*0.52,H*0.09,7); gull(W*0.56,H*0.17,6);
+
+  // --- right of sash: döner chef ---
+  (function doner(x,base,h){
+    st(3.4); ctx.beginPath(); ctx.moveTo(x,base); ctx.lineTo(x,base-h); ctx.stroke();
+    const mt=base-h*0.86, mb=base-h*0.16;
+    st(3); ctx.beginPath();
+    ctx.moveTo(x-h*0.13,mt); ctx.quadraticCurveTo(x-h*0.21,(mt+mb)/2,x-h*0.10,mb);
+    ctx.lineTo(x+h*0.10,mb); ctx.quadraticCurveTo(x+h*0.21,(mt+mb)/2,x+h*0.13,mt);
+    ctx.closePath(); ctx.stroke();
+    st(1.8);
+    for(let y=mt+12;y<mb-6;y+=13){
+      const wd=h*(0.11+0.07*Math.sin(Math.PI*(y-mt)/(mb-mt)));
+      ctx.beginPath(); ctx.moveTo(x-wd,y); ctx.quadraticCurveTo(x,y+4,x+wd,y); ctx.stroke(); }
+    st(2.4,orange); ctx.beginPath();
+    ctx.moveTo(x+h*0.27,mb); ctx.quadraticCurveTo(x+h*0.33,mb-22,x+h*0.27,mb-44);
+    ctx.quadraticCurveTo(x+h*0.21,mb-60,x+h*0.27,mb-76); ctx.stroke();
+  })(W*0.645,G,210);
+  (function chef(x,base,s){
+    st(3);
+    ctx.beginPath(); ctx.arc(x,base-s*0.72,s*0.09,0,6.283); ctx.stroke();
+    ctx.strokeRect(x-s*0.085,base-s*0.92,s*0.17,s*0.1);
+    ctx.beginPath(); ctx.moveTo(x-s*0.085,base-s*0.92); ctx.quadraticCurveTo(x,base-s*1.04,x+s*0.085,base-s*0.92); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.11,base-s*0.62); ctx.lineTo(x-s*0.13,base-s*0.2); ctx.lineTo(x+s*0.13,base-s*0.2); ctx.lineTo(x+s*0.11,base-s*0.62); ctx.closePath(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.06,base-s*0.2); ctx.lineTo(x-s*0.06,base); ctx.moveTo(x+s*0.06,base-s*0.2); ctx.lineTo(x+s*0.06,base);
+    ctx.moveTo(x-s*0.11,base-s*0.56); ctx.lineTo(x-s*0.3,base-s*0.5); ctx.stroke();
+    st(2.4,gold); ctx.beginPath(); ctx.moveTo(x-s*0.3,base-s*0.52); ctx.lineTo(x-s*0.48,base-s*0.46); ctx.stroke();
+  })(W*0.695,G,205);
+
+  // --- simit vendor with cart ---
+  (function cart(x,base,s){
+    st(3); ctx.strokeRect(x-s*0.5,base-s*0.52,s,s*0.32);
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.56,base-s*0.52); ctx.lineTo(x-s*0.5,base-s*0.74); ctx.lineTo(x+s*0.5,base-s*0.74); ctx.lineTo(x+s*0.56,base-s*0.52); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x-s*0.28,base-9,10,0,6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x+s*0.28,base-9,10,0,6.283); ctx.stroke();
+    st(2,gold);
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.arc(x+i*s*0.24,base-s*0.62,8,0,6.283); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x+i*s*0.24,base-s*0.62,3.2,0,6.283); ctx.stroke(); }
+    const f=figure(x+s*0.8,base,52);
+    st(1.8); ctx.beginPath(); ctx.moveTo(f.sx,f.sy); ctx.lineTo(x+s*0.56,base-s*0.5); ctx.stroke();
+  })(W*0.795,G,150);
+  star(W*0.85,H*0.22,9);
+
+  // --- Maiden's Tower + waves ---
+  (function maiden(x,base,s){
+    st(3); ctx.strokeRect(x-s*0.1,base-s*0.62,s*0.2,s*0.4);
+    ctx.beginPath(); ctx.moveTo(x-s*0.13,base-s*0.62); ctx.lineTo(x,base-s*0.82); ctx.lineTo(x+s*0.13,base-s*0.62); ctx.stroke();
+    ctx.strokeRect(x-s*0.24,base-s*0.22,s*0.48,s*0.11);
+    ctx.beginPath(); ctx.moveTo(x-s*0.34,base); ctx.lineTo(x+s*0.34,base); ctx.stroke();
+    waves(x-s*0.55,x+s*0.55,base+12);
+  })(W*0.925,G-10,150);
+  gull(W*0.90,H*0.13,8); gull(W*0.955,H*0.20,6);
+  tulip(W*0.985,G,48);
+
+  // ground dashes
+  st(2.2); ctx.globalAlpha=.6;
+  for(let x=14;x<W-30;x+=52+rnd()*36){ ctx.beginPath(); ctx.moveTo(x,H-12); ctx.lineTo(x+24,H-12); ctx.stroke(); }
+  ctx.globalAlpha=1;
+}
+
 /* Istanbul skyline silhouette across the whole board: row houses, Galata Tower,
    Bosphorus Bridge, Maiden's Tower + seagulls — deliberately no mosque shapes */
 function drawSkyline(ctx, W, H, si){
@@ -510,7 +821,8 @@ function setStyle(v){ STYLE=v; document.body.dataset.style=v; SECTIONS.forEach((
 /* each item has a width weight w (default 1); a split box becomes two boxes of w/2,
    so the rest of the board keeps its exact physical size */
 function totalWeight(sec){ return sec.items.reduce((a,it)=>a+(it.w||1),0) || 1; }
-function boardWidthPx(sec){ return BOARD_H * parseFloat(sec.dim)/35; }   // parseFloat: dims like 137.5 cm
+function secHcm(sec){ const p=(sec.dim.match(/[\d.]+/g)||[]).map(Number); return p[1]||35; }
+function boardWidthPx(sec){ return BOARD_H * parseFloat(sec.dim)/secHcm(sec); }   // parseFloat: dims like 137.5 cm
 function cellWidth(sec, it){ return boardWidthPx(sec) * (((it&&it.w)||1)/totalWeight(sec)); }
 function cellCm(sec, it){ return parseFloat(sec.dim) * (((it&&it.w)||1)/totalWeight(sec)); }
 function cellEdges(sec){ const xs=[0]; let x=0;
@@ -529,6 +841,17 @@ function applyCellTitle(cell, sec, idx){
   const n=cell.querySelector('.name'), s=cell.querySelector('.sub');
   if(n) n.style.fontSize=(b.name*ts)+'px';
   if(s) s.style.fontSize=(b.sub*ts)+'px';
+}
+// apply a cell's price size live (both tags share the same scale)
+function applyPriceSize(cell, sec, idx){
+  const it=sec.items[idx]; if(!it) return;
+  const w=cellWidth(sec,it);
+  const base=Math.max(24, Math.min(46, w*0.115))*(it.ps||1);
+  cell.querySelectorAll('.price').forEach(pr=>{
+    const num=pr.querySelector('.pnum'), th=pr.querySelector('.thb');
+    if(num) num.style.fontSize=base+'px';
+    if(th) th.style.fontSize=Math.max(11, Math.round(base*0.4))+'px';
+  });
 }
 function applyBannerColor(cell, it){
   const banner=cell.querySelector('.banner'); if(!banner) return;
@@ -581,8 +904,18 @@ function makeCell(item, idx, w){
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = bannerPad(item, poster);
-  const thbSize = Math.max(11, Math.round(priceSize*0.4));
+  const psize = priceSize*(item.ps||1);
+  const thbSize = Math.max(11, Math.round(psize*0.4));
   const cur = (item.thb!==undefined ? item.thb : 'THB');
+  const cur2 = (item.thb2!==undefined ? item.thb2 : cur);
+  const priceTag=(n,val,curv,x,y)=>`
+    <div class="price${n===2?' second':''}" data-p="${n}" style="transform:translate(${x||0}px,${y||0}px)">
+      <span class="pgrip no-print" title="drag price">≡</span>
+      <span class="pnum" contenteditable style="font-size:${psize}px">${val}</span>
+      <span class="thb" contenteditable style="font-size:${thbSize}px">${curv}</span>
+    </div>`;
+  const prices = priceTag(1,item.p,cur,item.px,item.py)
+    + (item.p2!==undefined ? priceTag(2,item.p2,cur2,item.p2x,item.p2y) : '');
   const squig = poster ? `<div class="squiggle" style="background-image:url('${SQUIGGLE}')"></div>` : '';
   c.innerHTML = `
     <button class="del no-print" title="remove">×</button>
@@ -604,10 +937,12 @@ function makeCell(item, idx, w){
     <div class="photo" data-empty="${item.img?'0':'1'}">
       ${photoInner}
     </div>
-    <div class="price">
-      <span class="pnum" contenteditable style="font-size:${priceSize}px">${item.p}</span>
-      <span class="thb" contenteditable style="font-size:${thbSize}px">${cur}</span>
+    <div class="pricectl no-print">
+      <button data-ps="-1" title="smaller price">P−</button>
+      <button data-ps="1" title="bigger price">P+</button>
+      <button data-p2 title="${item.p2!==undefined?'remove second price':'add second price (two options)'}">${item.p2!==undefined?'−2':'+2'}</button>
     </div>
+    ${prices}
     ${squig}`;
   return c;
 }
@@ -617,18 +952,34 @@ function renderBoard(si){
   const board = document.querySelector(`.board[data-sec="${si}"]`);
   board.innerHTML = '';
   const cv=document.createElement('canvas'); cv.className='bg'; board.appendChild(cv);
-  sec.items.forEach((it,idx)=> board.appendChild(makeCell(it,idx,cellWidth(sec,it))));
-  // add-cell button
-  const add = document.createElement('div');
-  add.className='addcell no-print';
-  add.innerHTML='<button title="add item">+</button>';
-  add.querySelector('button').onclick=()=>{ syncBoard(si);
-    SECTIONS[si].items.push({n:"NEW ITEM",s:"Description",p:""}); renderBoard(si); updateHead(si); };
-  board.appendChild(add);
+  if(sec.art){
+    // pure art banner: no menu boxes, just the mural + brand sash
+    board.style.minWidth=Math.round(boardWidthPx(sec))+'px';
+    const sash=document.createElement('div'); sash.className='brandsash';
+    sash.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" preserveAspectRatio="none"><path fill="#C41E3A" d="M6 18 H354 L332 48 L354 78 H6 L28 48 Z"/></svg>`
+      +`<span class="sashtext" contenteditable>${sec.brand||'PALACE ISTANBUL KEBAB'}</span>`;
+    board.appendChild(sash);
+  } else {
+    sec.items.forEach((it,idx)=> board.appendChild(makeCell(it,idx,cellWidth(sec,it))));
+    // add-cell button
+    const add = document.createElement('div');
+    add.className='addcell no-print';
+    add.innerHTML='<button title="add item">+</button>';
+    add.querySelector('button').onclick=()=>{ syncBoard(si);
+      SECTIONS[si].items.push({n:"NEW ITEM",s:"Description",p:""}); renderBoard(si); updateHead(si); };
+    board.appendChild(add);
+  }
+  if(sec.fire){
+    const st=document.createElement('div'); st.className='authstamp';
+    st.innerHTML='AUTHENTIC<span>★</span>ISTANBUL';
+    board.appendChild(st);
+  }
   drawBg(cv, si);
 }
 
 function headLabel(sec){
+  if(sec.art) return "hand-drawn Istanbul mural · no menu boxes";
+  if(sec.fire) return "feature panel · stone-oven fire";
   const ws=sec.items.map(it=>it.w||1);
   const uniform=ws.every(w=>w===ws[0]);
   const fmt=v=>Math.round(v*10)/10;
@@ -646,9 +997,13 @@ function syncBoard(si){  // read live DOM edits back into the model
     if(!sec.items[idx]) return;
     sec.items[idx].n=c.querySelector('.name').textContent.trim();
     sec.items[idx].s=c.querySelector('.sub').textContent.trim();
-    sec.items[idx].p=c.querySelector('.pnum').textContent.trim();
-    const thbEl=c.querySelector('.thb');
-    if(thbEl) sec.items[idx].thb=thbEl.textContent.trim();
+    const prices=c.querySelectorAll('.price');
+    sec.items[idx].p=prices[0].querySelector('.pnum').textContent.trim();
+    sec.items[idx].thb=prices[0].querySelector('.thb').textContent.trim();
+    if(prices[1]){
+      sec.items[idx].p2=prices[1].querySelector('.pnum').textContent.trim();
+      sec.items[idx].thb2=prices[1].querySelector('.thb').textContent.trim();
+    }
     const img=c.querySelector('.photo img');
     sec.items[idx].img= img? img.src : null;
     if(!img){ sec.items[idx].z=1; sec.items[idx].x=0; sec.items[idx].y=0; }
@@ -744,6 +1099,21 @@ boardsEl.addEventListener('click',e=>{
     it.shape=(shapeIdxFor(it, STYLE==='poster')+1)%BANNER_SHAPES.length;
     applyBannerShape(cell, it); return; }
 
+  // per-product price size (live, no re-render)
+  const pb=e.target.closest('.pricectl button[data-ps]');
+  if(pb){ const cell=pb.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
+    const it=SECTIONS[si].items[idx]; it.ps=Math.min(2.2, Math.max(0.5, +(((it.ps||1)+(+pb.dataset.ps)*0.1)).toFixed(2)));
+    applyPriceSize(cell, SECTIONS[si], idx); return; }
+
+  // toggle a second price tag (for products with two options at different prices)
+  const p2b=e.target.closest('.pricectl button[data-p2]');
+  if(p2b){ const cell=p2b.closest('.cell'); const si=+cell.closest('.board').dataset.sec;
+    syncBoard(si);
+    const it=SECTIONS[si].items[+cell.dataset.idx];
+    if(it.p2===undefined){ it.p2=''; }
+    else { delete it.p2; delete it.thb2; delete it.p2x; delete it.p2y; }
+    renderBoard(si); return; }
+
   // zoom buttons
   const zb=e.target.closest('.zoomctl button');
   if(zb){ e.stopPropagation();
@@ -771,9 +1141,18 @@ boardsEl.addEventListener('wheel',e=>{
   applyZoom(photo);
 },{passive:false});
 
-// drag to pan a filled photo
-let pan=null;
+// drag to pan a filled photo; drag a price tag by its ≡ grip
+let pan=null, pdrag=null;
 boardsEl.addEventListener('pointerdown',e=>{
+  const grip=e.target.closest('.pgrip');
+  if(grip){
+    const priceEl=grip.closest('.price'); const it=itemOf(priceEl); if(!it) return;
+    const second=priceEl.dataset.p==='2';
+    const kx=second?'p2x':'px', ky=second?'p2y':'py';
+    pdrag={priceEl,it,kx,ky,sx:e.clientX,sy:e.clientY,ox:it[kx]||0,oy:it[ky]||0};
+    grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
+    e.preventDefault(); return;
+  }
   const photo=e.target.closest('.photo');
   if(!photo || photo.dataset.empty!=='0') return;
   if(e.target.closest('.zoomctl')) return;
@@ -784,12 +1163,17 @@ boardsEl.addEventListener('pointerdown',e=>{
   e.preventDefault();
 });
 boardsEl.addEventListener('pointermove',e=>{
+  if(pdrag){
+    const nx=pdrag.ox+(e.clientX-pdrag.sx), ny=pdrag.oy+(e.clientY-pdrag.sy);
+    pdrag.it[pdrag.kx]=nx; pdrag.it[pdrag.ky]=ny;
+    pdrag.priceEl.style.transform=`translate(${nx}px,${ny}px)`; return;
+  }
   if(!pan) return;
   pan.it.x=pan.ox+(e.clientX-pan.sx);
   pan.it.y=pan.oy+(e.clientY-pan.sy);
   applyZoom(pan.photo);
 });
-function endPan(){ if(pan){ pan.photo.classList.remove('panning'); pan=null; } }
+function endPan(){ if(pan){ pan.photo.classList.remove('panning'); pan=null; } pdrag=null; }
 boardsEl.addEventListener('pointerup',endPan);
 boardsEl.addEventListener('pointercancel',endPan);
 
@@ -812,9 +1196,14 @@ boardsEl.addEventListener('input',e=>{
 });
 
 boardsEl.addEventListener('focusout',e=>{
+  if(e.target.classList.contains('sashtext')){
+    const si=+e.target.closest('.board').dataset.sec;
+    SECTIONS[si].brand=e.target.textContent.trim(); return;
+  }
   if(e.target.classList.contains('pnum')){
     const cell=e.target.closest('.cell');
     let t=e.target.textContent.trim();
+    if(e.target.closest('.price').dataset.p==='2'){ if(!t) e.target.innerHTML=''; return; }  // second tag: no SET stamp
     if(isSet(t)){ e.target.textContent='SET'; cell.classList.add('is-set'); }
     else { cell.classList.remove('is-set'); if(!t) e.target.innerHTML=''; }
   }
