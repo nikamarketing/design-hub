@@ -129,6 +129,8 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; outline:none; }
 .cell.is-set .thb{ display:none; }
 .price.second{ margin-top:2px; }
+/* "Show prices" unticked: hide every price everywhere, including exports */
+body.no-prices .price, body.no-prices .pricectl, body.no-prices .squiggle{ display:none !important; }
 /* price controls: size buttons + second-price toggle, and a drag grip on each tag */
 .pricectl{ position:absolute; z-index:6; bottom:8px; right:8px; display:flex; align-items:center; gap:4px;
   background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
@@ -192,6 +194,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
     <option value="istanbul">Istanbul Theme</option>
     <option value="istanbulflow">Istanbul Flow (Soft)</option>
   </select>
+  <label class="chk"><input type="checkbox" id="showPrices" checked onchange="setShowPrices(this.checked)">Show prices</label>
   <label class="chk"><input type="checkbox" id="bgLines" checked onchange="setBgLines(this.checked)">Background lines</label>
   <label class="chk"><input type="checkbox" id="solidBg" onchange="setSolid(this.checked)">Single colour</label>
   <input type="color" id="bgColor" value="#a01818" oninput="setBgColor(this.value)" title="background colour">
@@ -263,6 +266,7 @@ function bumpTitle(dir){   // global "all titles" nudge — applied live, backgr
   SECTIONS.forEach((sec,si)=>document.querySelectorAll(`.board[data-sec="${si}"] .cell`).forEach((c,idx)=>applyCellTitle(c,sec,idx)));
 }
 function setBgLines(on){ BG_LINES=on; SECTIONS.forEach((_,si)=>renderBoard(si)); }
+function setShowPrices(on){ document.body.classList.toggle('no-prices', !on); }   // hides prices on screen AND in exports
 let SOLID_BG=false, BG_COLOR='#a01818';   // single-colour background + chosen colour
 function setSolid(on){ SOLID_BG=on; SECTIONS.forEach((_,si)=>renderBoard(si)); }
 function setBgColor(v){ BG_COLOR=v; if(SOLID_BG) SECTIONS.forEach((_,si)=>renderBoard(si)); }
