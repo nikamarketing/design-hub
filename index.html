@@ -131,6 +131,9 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .price.second{ margin-top:2px; }
 /* per-board "Prices" checkbox unticked: hide that board's prices, including in exports */
 .board.no-prices .price, .board.no-prices .pricectl, .board.no-prices .squiggle{ display:none !important; }
+/* per-box checkbox unticked: hide that box's price only (controls stay so it can be re-enabled) */
+.cell.no-prices .price, .cell.no-prices .squiggle{ display:none !important; }
+.pricectl input{ width:14px; height:14px; cursor:pointer; margin:0 2px; accent-color:#F4B400; }
 /* price controls: size buttons + second-price toggle, and a drag grip on each tag */
 .pricectl{ position:absolute; z-index:6; bottom:8px; right:8px; display:flex; align-items:center; gap:4px;
   background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
@@ -944,7 +947,7 @@ function imgTransform(it){
 
 function makeCell(item, idx, w){
   const c = document.createElement('div');
-  c.className = 'cell'+(isSet(item.p)?' is-set':'');
+  c.className = 'cell'+(isSet(item.p)?' is-set':'')+(item.hideP?' no-prices':'');
   c.style.width = w+'px';
   c.dataset.idx = idx;
   const poster = (STYLE==='poster');
@@ -1001,6 +1004,7 @@ function makeCell(item, idx, w){
       ${photoInner}
     </div>
     <div class="pricectl no-print">
+      <input type="checkbox" class="boxprices" title="show price on this box" ${item.hideP?'':'checked'}>
       <button data-ps="-1" title="smaller price">P−</button>
       <button data-ps="1" title="bigger price">P+</button>
       <button data-p2 title="${item.p2!==undefined?'remove second price':'add second price (two options)'}">${item.p2!==undefined?'−2':'+2'}</button>
@@ -1253,6 +1257,13 @@ boardsEl.addEventListener('input',e=>{
   if(e.target.classList.contains('bcol')){
     const cell=e.target.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
     SECTIONS[si].items[idx].bc=e.target.value; applyBannerColor(cell, SECTIONS[si].items[idx]); return;
+  }
+  // per-box price on/off
+  if(e.target.classList.contains('boxprices')){
+    const cell=e.target.closest('.cell'); const si=+cell.closest('.board').dataset.sec;
+    const it=SECTIONS[si].items[+cell.dataset.idx];
+    it.hideP=!e.target.checked;
+    cell.classList.toggle('no-prices', it.hideP); return;
   }
   // per-section prices on/off
   if(e.target.classList.contains('secprices')){
