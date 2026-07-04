@@ -129,8 +129,8 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
 .thb{ font-family:Oswald; font-weight:700; letter-spacing:2px; color:#F4B400; outline:none; }
 .cell.is-set .thb{ display:none; }
 .price.second{ margin-top:2px; }
-/* "Show prices" unticked: hide every price everywhere, including exports */
-body.no-prices .price, body.no-prices .pricectl, body.no-prices .squiggle{ display:none !important; }
+/* per-board "Prices" checkbox unticked: hide that board's prices, including in exports */
+.board.no-prices .price, .board.no-prices .pricectl, .board.no-prices .squiggle{ display:none !important; }
 /* price controls: size buttons + second-price toggle, and a drag grip on each tag */
 .pricectl{ position:absolute; z-index:6; bottom:8px; right:8px; display:flex; align-items:center; gap:4px;
   background:rgba(0,0,0,.5); border-radius:14px; padding:3px 5px; }
@@ -266,7 +266,14 @@ function bumpTitle(dir){   // global "all titles" nudge — applied live, backgr
   SECTIONS.forEach((sec,si)=>document.querySelectorAll(`.board[data-sec="${si}"] .cell`).forEach((c,idx)=>applyCellTitle(c,sec,idx)));
 }
 function setBgLines(on){ BG_LINES=on; SECTIONS.forEach((_,si)=>renderBoard(si)); }
-function setShowPrices(on){ document.body.classList.toggle('no-prices', !on); }   // hides prices on screen AND in exports
+// master toggle: sets every board's own Prices checkbox at once
+function setShowPrices(on){
+  SECTIONS.forEach((sec,si)=>{
+    sec.hidePrices=!on;
+    const b=document.querySelector(`.board[data-sec="${si}"]`); if(b) b.classList.toggle('no-prices', !on);
+    const c=document.querySelector(`.secprices[data-sec="${si}"]`); if(c) c.checked=on;
+  });
+}
 let SOLID_BG=false, BG_COLOR='#a01818';   // single-colour background + chosen colour
 function setSolid(on){ SOLID_BG=on; SECTIONS.forEach((_,si)=>renderBoard(si)); }
 function setBgColor(v){ BG_COLOR=v; if(SOLID_BG) SECTIONS.forEach((_,si)=>renderBoard(si)); }
@@ -1007,6 +1014,7 @@ function renderBoard(si){
   const sec = SECTIONS[si];
   const board = document.querySelector(`.board[data-sec="${si}"]`);
   board.innerHTML = '';
+  board.classList.toggle('no-prices', !!sec.hidePrices);
   const cv=document.createElement('canvas'); cv.className='bg'; board.appendChild(cv);
   if(sec.art){
     // pure art banner: no menu boxes, just the mural + brand sash
@@ -1070,12 +1078,15 @@ function syncBoard(si){  // read live DOM edits back into the model
 function buildAll(){
   SECTIONS.forEach((sec,si)=>{
     const wrap=document.createElement('section');
+    const pricesChk = sec.art ? '' :
+      `<label class="chk" title="show prices on this board">Prices <input type="checkbox" class="secprices" data-sec="${si}" ${sec.hidePrices?'':'checked'}></label>`;
     wrap.innerHTML=`
       <div class="boardhead no-print">
         <h2>${sec.name}</h2>
         <span class="dim">${sec.dim}</span>
         <span class="cells cellcount" data-sec="${si}">${headLabel(sec)}</span>
         <span class="bspacer"></span>
+        ${pricesChk}
         <label class="chk" title="set this whole board to one colour">Board colour <input type="color" class="seccolor" data-sec="${si}" value="${sec.bg||'#a01818'}"></label>
         <button class="btn ghost" onclick="downloadPNG(${si})">Download PNG</button>
         <button class="btn ghost" onclick="downloadSectionPDF(${si})">Download PDF</button>
@@ -1242,6 +1253,12 @@ boardsEl.addEventListener('input',e=>{
   if(e.target.classList.contains('bcol')){
     const cell=e.target.closest('.cell'); const si=+cell.closest('.board').dataset.sec; const idx=+cell.dataset.idx;
     SECTIONS[si].items[idx].bc=e.target.value; applyBannerColor(cell, SECTIONS[si].items[idx]); return;
+  }
+  // per-section prices on/off
+  if(e.target.classList.contains('secprices')){
+    const si=+e.target.dataset.sec; SECTIONS[si].hidePrices=!e.target.checked;
+    document.querySelector(`.board[data-sec="${si}"]`).classList.toggle('no-prices', SECTIONS[si].hidePrices);
+    return;
   }
   // per-section background colour (whole board one colour) — only meaningful in single-colour mode
   if(e.target.classList.contains('seccolor')){
