@@ -190,6 +190,7 @@ body[data-style="3d"] .photo img{ filter:drop-shadow(0 15px 17px rgba(0,0,0,.62)
     <option value="billboard">Billboard (Gradient)</option>
     <option value="3d">3D Effect</option>
     <option value="istanbul">Istanbul Theme</option>
+    <option value="istanbulflow">Istanbul Flow (Soft)</option>
   </select>
   <label class="chk"><input type="checkbox" id="bgLines" checked onchange="setBgLines(this.checked)">Background lines</label>
   <label class="chk"><input type="checkbox" id="solidBg" onchange="setSolid(this.checked)">Single colour</label>
@@ -356,6 +357,8 @@ function drawBg(canvas, si){
 
   // ---------- Billboard: one glossy gradient flowing across the whole board ----------
   if(STYLE==='billboard'){ drawBillboard(ctx, W, H, xs, solidCol, si); return; }
+  // ---------- Istanbul Flow: tones melt into each other, no hard seams between dishes ----------
+  if(STYLE==='istanbulflow'){ drawIstanbulFlow(ctx, W, H, xs, si); return; }
 
   // slant = diagonal seam offset; gap = black separator between tiles (horizontal & 3d styles)
   const slant=(STYLE==='straight'||STYLE==='3d')?0:20;
@@ -548,6 +551,55 @@ function flameTongue(ctx, x, base, h, w2, color){
   ctx.bezierCurveTo(x-w2/2, base-h*0.34, x-w2*0.30, base-h*0.60, x, base-h);
   ctx.bezierCurveTo(x+w2*0.30, base-h*0.60, x+w2/2, base-h*0.34, x+w2/2, base);
   ctx.closePath(); ctx.fill();
+}
+
+/* Istanbul Flow: one continuous background connecting all dishes — each dish keeps
+   its tone but the colours melt into the next, light pools overlap, festoon lights
+   swing from box to box, and the skyline runs under everything (no hard seams) */
+function drawIstanbulFlow(ctx, W, H, xs, si){
+  const n=xs.length-1, rnd=rng(si*271+53);
+  const solidCol=SECTIONS[si].bg || BG_COLOR;
+  const g=ctx.createLinearGradient(0,0,W,0);
+  if(SOLID_BG || n===1){
+    const c=SOLID_BG?solidCol:TONE_COLORS[0][1];
+    g.addColorStop(0,shade(c,-.18)); g.addColorStop(.5,shade(c,.08)); g.addColorStop(1,shade(c,-.18));
+  } else {
+    for(let i=0;i<n;i++) g.addColorStop(Math.max(0,Math.min(1,((xs[i]+xs[i+1])/2)/W)), TONE_COLORS[i%3][1]);
+  }
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // vertical depth
+  const vg=ctx.createLinearGradient(0,0,0,H);
+  vg.addColorStop(0,'rgba(0,0,0,0.24)'); vg.addColorStop(.35,'rgba(0,0,0,0)'); vg.addColorStop(.7,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.30)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  // soft light pool behind every dish — pools overlap so nothing cuts
+  for(let i=0;i<n;i++){
+    const cx=(xs[i]+xs[i+1])/2, cw=xs[i+1]-xs[i];
+    const rg=ctx.createRadialGradient(cx,H*0.46,10, cx,H*0.5,Math.max(cw,H)*0.62);
+    rg.addColorStop(0,'rgba(255,244,214,0.20)'); rg.addColorStop(.6,'rgba(255,244,214,0.05)'); rg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+  // halftone + speckle texture
+  ctx.globalAlpha=0.10; ctx.fillStyle='#ffffff';
+  for(let y=6,row=0;y<H;y+=15,row++){ for(let x=0;x<W;x+=15){ ctx.beginPath(); ctx.arc(x+(row%2?7:0),y,1.5,0,6.283); ctx.fill(); } }
+  ctx.globalAlpha=1;
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let sp=0;sp<30*n;sp++) ctx.fillRect(rnd()*W, rnd()*H, 2, 2);
+  // festoon light string swinging from box to box — ties the dishes together
+  ctx.strokeStyle='rgba(20,8,4,0.55)'; ctx.lineWidth=2;
+  for(let i=0;i<n;i++){
+    const x0=xs[i], x1=xs[i+1], sag=30+((i%2)?6:0);
+    ctx.beginPath(); ctx.moveTo(x0,10); ctx.quadraticCurveTo((x0+x1)/2,10+sag*2,x1,10); ctx.stroke();
+    for(let t=0.16;t<0.95;t+=0.17){
+      const bx=(1-t)*(1-t)*x0+2*t*(1-t)*(x0+x1)/2+t*t*x1;
+      const by=(1-t)*(1-t)*10+2*t*(1-t)*(10+sag*2)+t*t*10;
+      const glow=ctx.createRadialGradient(bx,by+5,1, bx,by+5,10);
+      glow.addColorStop(0,'rgba(255,214,79,0.9)'); glow.addColorStop(1,'rgba(255,214,79,0)');
+      ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(bx,by+5,10,0,6.283); ctx.fill();
+      ctx.fillStyle='#ffd54f'; ctx.beginPath(); ctx.arc(bx,by+5,3,0,6.283); ctx.fill();
+    }
+  }
+  // the skyline flows along the whole bottom, behind all the dishes
+  drawSkyline(ctx, W, H, si);
 }
 
 /* Cam Kapı Üstü banner: hand-drawn chalk mural of Istanbul life & food culture —
@@ -900,7 +952,7 @@ function makeCell(item, idx, w){
        </div>`
     : `<span class="addhint no-print">+ ADD<br>PHOTO</span>`;
   const decor = poster ? `<div class="decor" style="background-image:url('${decorFor(idx)}')"></div>`
-    : (STYLE==='istanbul' ? `<div class="decor ist" style="background-image:url('${istDecorFor(idx)}')"></div>` : '');
+    : ((STYLE==='istanbul'||STYLE==='istanbulflow') ? `<div class="decor ist" style="background-image:url('${istDecorFor(idx)}')"></div>` : '');
   const bcol = item.bc || '#fdfaf3';
   const bannerCls = poster ? 'banner brush' : 'banner';
   const bannerStyle = bannerPad(item, poster);
